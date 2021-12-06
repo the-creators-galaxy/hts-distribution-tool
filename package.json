@@ -1,0 +1,49 @@
+{
+  "name": "@creators-galaxy/token-distribution-tool",
+  "version": "1.0.0",
+  "description": "Creator's Galaxy Token Distribution Tool",
+  "author": "Calaxy, Inc.",
+  "license": "MIT",
+  "private": false,
+  "main": "index.js",
+  "scripts": {
+    "build": "rollup -c",
+    "dev": "rollup -c -w",
+    "start": "electron .",
+    "dist": "npm run build && electron-builder",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "format": "prettier --config .prettierrc.json src/**/*.ts --write",
+    "test": "mocha -r ts-node/register -r dotenv/config test/**/*.spec.ts",
+    "test:unit": "mocha -r ts-node/register -r dotenv/config test/unit/**/*.spec.ts",
+    "test:integration": "mocha -r ts-node/register -r dotenv/config test/integration/**/*.spec.ts"
+  },
+  "devDependencies": {
+    "@rollup/plugin-commonjs": "^12.0.0",
+    "@rollup/plugin-node-resolve": "^13.0.0",
+    "@rollup/plugin-typescript": "^8.2.5",
+    "@tsconfig/svelte": "^2.0.0",
+    "@types/chai": "^4.2.22",
+    "@types/mocha": "^9.0.0",
+    "chai": "^4.3.4",
+    "electron": "^15.0.0",
+    "electron-builder": "^22.11.7",
+    "mocha": "^9.1.3",
+    "rollup": "^2.3.4",
+    "rollup-plugin-css-only": "^3.1.0",
+    "rollup-plugin-livereload": "^2.0.0",
+    "rollup-plugin-svelte": "^7.0.0",
+    "rollup-plugin-terser": "^7.0.0",
+    "svelte": "^3.0.0",
+    "svelte-check": "^2.0.0",
+    "svelte-preprocess": "^4.0.0",
+    "ts-node": "^10.4.0",
+    "tslib": "^2.0.0",
+    "typescript": "^4.0.0"
+  },
+  "dependencies": {
+    "@hashgraph/sdk": "^2.1.0",
+    "csv-parse": "^4.16.3",
+    "prettier": "^2.5.0",
+    "sirv-cli": "^1.0.0"
+  }
+}
