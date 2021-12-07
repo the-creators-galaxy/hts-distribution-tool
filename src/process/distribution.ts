@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import { stringify } from 'csv-stringify';
 import {
 	AccountBalanceQuery,
 	AccountId,
@@ -1090,6 +1092,51 @@ export function getDistributionResults(): Promise<any> {
 		payments: payments.map(castDistributionInfo),
 	});
 }
+/**
+ * Writes the final detailed results of a distribution plan
+ * execution to an output CSV file.
+ *
+ * @param filePath full path to the output file to write to.
+ * @returns promise that will resolve when writing the results
+ * to the file has completed, or rejection if there is an error.
+ */
+export function saveDistributionResultsFile(filePath: string): Promise<void> {
+	return new Promise((resolve, reject) => {
+		const outputStream = fs.createWriteStream(filePath);
+		outputStream.on('finish', resolve);
+		outputStream.on('error', reject);
+		const stringifier = stringify({ delimiter: ',' });
+		stringifier.pipe(outputStream);
+		stringifier.write([
+			'Account',
+			'Amount',
+			'Distribution Id',
+			'Scheduling Tx Id',
+			'Scheduling Tx Status',
+			'Countersigning Tx Id',
+			'Countersigning Tx Status',
+			'Scheduled Payment Tx Id',
+			'Scheduled Payment Tx Status',
+			'Status Description',
+		]);
+		for (const payment of payments) {
+			stringifier.write([
+				payment.account.toString(),
+				payment.amountInTinyToken.shiftedBy(-tokenDecimals).toString(),
+				payment.schedulingResult?.receipt?.scheduleId.toString(),
+				payment.schedulingResult?.transactionId?.toString(),
+				payment.schedulingResult?.receipt?.status?.toString(),
+				payment.countersigningResult?.transactionId?.toString(),
+				payment.countersigningResult?.receipt?.status?.toString(),
+				payment.schedulingResult?.receipt?.scheduledTransactionId?.toString(),
+				payment.confirmationResult?.response?.status?.toString(),
+				payment.status,
+			]);
+		}
+		stringifier.end();
+	});
+}
+
 /**
  * Returns the distribution module internal memory
  * state to uninitialized.
