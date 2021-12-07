@@ -14,6 +14,8 @@
 	let pagedTransferData = [];
 	let pagedErrorData = [];
 
+	let saving = false;
+
 	onMount(async () => {
 		try {
 			results = await invoke('get-distribution-results');
@@ -26,6 +28,19 @@
 		hasErrors = results.errors.length > 0;
 		selectedTab = hasErrors ? 1 : 0;
 	});	
+
+	async function saveResultsToFile(): Promise<void> {
+		saving = true;		
+		const filename = await invoke('query-user-for-output-file');
+		if(filename) {
+			try {
+			await invoke('save-results-output-file', filename);
+			} catch(err) {
+				alert(`Sorry, an unexpected error occurred: ${err.message || JSON.stringify(err)}`);
+			}
+		}
+		saving = false;
+	}
 </script>
 
 <main>
@@ -36,7 +51,14 @@
 			<div class="tcg-logo"></div>
 		</header>
 		<section>
-			<div class="tcg-error-notice">Scheduling complete with errors, please review the results</div>
+			<div class="tcg-error-notice">
+				<div>Scheduling complete with errors, please review the results</div>
+				{#if saving}
+				<button class="tcg-light-spinner" disabled>Saving&mldr;</button>	
+				{:else}
+				<button on:click={saveResultsToFile} class="tcg-light-download">Save to file</button>
+				{/if}
+			</div>
 			<nav>				
 				<div class="tcg-tab-strip">
 					<button on:click={() => selectedTab = 0} class:selected="{selectedTab === 0}">Completed</button>
@@ -66,6 +88,11 @@
 				<div class="tcg-stat-group">
 					<div>Completed <span>{results.payments.length}</span></div>
 				</div>
+				{#if saving}
+				<button class="tcg-light-spinner" disabled>Saving&mldr;</button>	
+				{:else}
+				<button on:click={saveResultsToFile} class="tcg-light-download">Save to file</button>
+				{/if}
 			</div>
 			<nav class="no-tabs">
 				<PagingController allData={results.payments} bind:pagedData={pagedTransferData} bind:pageNumber={transferPageNo}></PagingController>
@@ -114,9 +141,29 @@
 		justify-content: end;
 	}
 	.tcg-success-notice {		
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		column-gap: 1rem;
+		row-gap: 1rem;
 		margin-top: 1rem;
 	}
 	.tcg-error-notice {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: space-between;
+		align-items: center;
+		column-gap: 1rem;
+		row-gap: 1rem;
 		margin-top: 1rem;
+	}
+	.tcg-success-notice > button {		
+		color: var(--tcg-green);
+	}
+	.tcg-error-notice > button {
+		color: var(--tcg-red);
 	}
 </style>

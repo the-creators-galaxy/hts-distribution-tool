@@ -95,6 +95,13 @@ input, select, .read-only-input
 	font-family: var(--tcg-font-family);
 }
 
+.read-only-input {
+	display: flex;
+	flex-direction: row;
+	align-items: center;
+	justify-content: start;
+}
+
 input[type=checkbox]
 {
 	appearance: none;
@@ -447,10 +454,22 @@ footer > button {
 	content: '';
 	width: 1.2em;
 	height: 1.2em;
-	margin: 0 0.5em 0 -0.5em;
-	vertical-align: bottom;
+	margin: -0.2em 0.5em -0.2em -0.5em;
 	display: inline-block;
 	background-image: url('arrow-left-light.svg');
+	background-repeat: no-repeat;
+	background-size: contain;
+	background-position: center;
+}
+
+.tcg-light-download::after {
+	content: '';
+	width: 1.4em;
+	height: 1.4em;
+	margin: -0.4em 0 -0.4em 0.8em;
+	padding: 0;
+	display: inline-block;
+	background-image: url('download.svg');
 	background-repeat: no-repeat;
 	background-size: contain;
 	background-position: center;
