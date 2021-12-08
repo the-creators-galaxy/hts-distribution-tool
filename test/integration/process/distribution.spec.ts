@@ -106,10 +106,10 @@ describe('tcg process code', function () {
                                 expect(record[2]).to.not.be.empty;
                                 expect(record[3]).to.not.be.empty;
                                 expect(record[4]).to.equal('SUCCESS');
-                                expect(record[5]).to.be.empty;
-                                expect(record[6]).to.be.empty;
+                                expect(record[5]).to.equal('n/a');
+                                expect(record[6]).to.equal('n/a');
                                 expect(record[7]).to.not.be.empty;
-                                expect(record[8]).to.be.empty;
+                                expect(record[8]).to.equal('n/a');
                                 expect(record[9]).to.equal(`Scheduling: Awaiting Add'l Signatures`);
                             }
                             count = count+1;

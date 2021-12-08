@@ -761,6 +761,18 @@ export async function executeDistributionPlan(
 		 * (or log an error if necessary).
 		 */
 		async function schedulePayment(): Promise<PaymentStage> {
+			if (payment.schedulingResult?.receipt) {
+				// this might be a re-do due to a dead node,
+				// we don't want to submit duplicate transactions
+				// if we know they were already executed with a
+				// successful response code.
+				switch (payment.schedulingResult.receipt.status) {
+					case Status.Success:
+						return PaymentStage.Confirming;
+					case Status.IdenticalScheduleAlreadyCreated:
+						return PaymentStage.Countersigning;
+				}
+			}
 			const { receipt, nodeHealth, error } = (payment.schedulingResult =
 				await client.executeTransaction(async (nodeIds) => {
 					const transactionToSchedule = new TransferTransaction()
@@ -830,6 +842,18 @@ export async function executeDistributionPlan(
 		 * receipt. (or log an error if necessary).
 		 */
 		async function countersignPayment(): Promise<PaymentStage> {
+			if (payment.countersigningResult?.receipt) {
+				// this might be a re-do due to a dead node,
+				// we don't want to submit duplicate transactions
+				// if we know they were already executed with a
+				// successful response code.
+				switch (payment.countersigningResult.receipt.status) {
+					case Status.Success:
+					case Status.ScheduleAlreadyExecuted:
+					case Status.NoNewValidSignatures:
+						return PaymentStage.Confirming;
+				}
+			}
 			const { receipt, nodeHealth, error } = (payment.countersigningResult =
 				await client.executeTransaction(async (nodeIds) => {
 					const transaction = new ScheduleSignTransaction()
@@ -850,8 +874,6 @@ export async function executeDistributionPlan(
 						return PaymentStage.Confirming;
 					case Status.NoNewValidSignatures:
 						return PaymentStage.Confirming;
-					case Status.InvalidScheduleId:
-						return PaymentStage.Scheduling;
 					case Status.ScheduleAlreadyExecuted:
 						return PaymentStage.Confirming;
 					default:
@@ -892,6 +914,13 @@ export async function executeDistributionPlan(
 		 * process as complete or log an error if necessary.
 		 */
 		async function confirmPayment(): Promise<PaymentStage> {
+			if (payment.confirmationResult?.response) {
+				// this might be a re-do due to a dead node,
+				// we don't want to submit duplicate queries
+				// if we know they were already executed with a
+				// successful response code.
+				return PaymentStage.Finished;
+			}
 			const scheduledTxId =
 				payment.schedulingResult.receipt.scheduledTransactionId;
 			const { response, nodeHealth, error } = (payment.confirmationResult =
@@ -1123,13 +1152,14 @@ export function saveDistributionResultsFile(filePath: string): Promise<void> {
 			stringifier.write([
 				payment.account.toString(),
 				payment.amountInTinyToken.shiftedBy(-tokenDecimals).toString(),
-				payment.schedulingResult?.receipt?.scheduleId.toString(),
-				payment.schedulingResult?.transactionId?.toString(),
-				payment.schedulingResult?.receipt?.status?.toString(),
-				payment.countersigningResult?.transactionId?.toString(),
-				payment.countersigningResult?.receipt?.status?.toString(),
-				payment.schedulingResult?.receipt?.scheduledTransactionId?.toString(),
-				payment.confirmationResult?.response?.status?.toString(),
+				payment.schedulingResult?.receipt?.scheduleId?.toString() || 'n/a',
+				payment.schedulingResult?.transactionId?.toString() || 'n/a',
+				payment.schedulingResult?.receipt?.status?.toString() || 'n/a',
+				payment.countersigningResult?.transactionId?.toString() || 'n/a',
+				payment.countersigningResult?.receipt?.status?.toString() || 'n/a',
+				payment.schedulingResult?.receipt?.scheduledTransactionId?.toString() ||
+					'n/a',
+				payment.confirmationResult?.response?.status?.toString() || 'n/a',
 				payment.status,
 			]);
 		}
