@@ -22,3 +22,23 @@ export async function queryUserForCsvFile(): Promise<string> {
 		? result.filePaths[0]
 		: null;
 }
+/**
+ * Displays a native file save dialog for the output “csv” file to the user.
+ * If the user chooses to save a file (with prompt for overwrite if applicable)
+ * the method returns the full path to the file, otherwise null.
+ *
+ * @returns The full path to the file to save, or null if the user
+ * canceled the file save process.
+ */
+export async function queryUserForOutputFile(): Promise<string> {
+	const result = await dialog.showSaveDialog(BrowserWindow.getFocusedWindow(), {
+		title: 'Save Distribution Results CSV File',
+		defaultPath: homedir(),
+		filters: [
+			{ name: 'CSV', extensions: ['csv'] },
+			{ name: 'All Files', extensions: ['*'] },
+		],
+		properties: ['showOverwriteConfirmation'],
+	});
+	return !result.canceled ? result.filePath : null;
+}

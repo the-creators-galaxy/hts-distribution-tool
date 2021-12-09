@@ -7,10 +7,11 @@ import {
 	getDistributionResults,
 	getTreasuryInformation,
 	loadDistributionFile,
+	saveDistributionResultsFile,
 	setTreasuryInformation,
 } from './distribution';
 import { validatePrivateKey } from './keys';
-import { queryUserForCsvFile } from './ui';
+import { queryUserForCsvFile, queryUserForOutputFile } from './ui';
 /**
  * The registry of supported/whitelisted methods executing in the
  * node process thread that can be invoked from the Electron User
@@ -26,6 +27,8 @@ const methods: { [key: string]: (...args: any[]) => Promise<any> } = {
 	'generate-distribution-plan': generateDistributionPlan,
 	'execute-distribution-plan': executeDistributionPlan,
 	'get-distribution-results': getDistributionResults,
+	'query-user-for-output-file': queryUserForOutputFile,
+	'save-results-output-file': saveDistributionResultsFile,
 };
 /**
  * The single IPC entry point used by the Electron User Interface

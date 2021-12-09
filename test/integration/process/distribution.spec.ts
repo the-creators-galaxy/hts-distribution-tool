@@ -1,7 +1,10 @@
+import * as path from 'path';
+import * as fs from 'fs';
+import parse from 'csv-parse';
 import { expect } from 'chai';
 import 'mocha';
 import { createDistributionScenario, privateKeytoSignatory, recoverFunds } from "../facets/scenarios.facets";
-import { executeDistributionPlan, generateDistributionPlan, getDistributionFileSummary, getDistributionResults, loadDistributionFile, resetDistribution, setTreasuryInformation } from '../../../src/process/distribution';
+import { executeDistributionPlan, generateDistributionPlan, getDistributionFileSummary, getDistributionResults, loadDistributionFile, resetDistribution, saveDistributionResultsFile, setTreasuryInformation } from '../../../src/process/distribution';
 import { NetworkId } from '../../../src/common/primitives';
 import { payer, payerPrivateKey } from '../facets/environment.facets';
 
@@ -23,6 +26,7 @@ describe('tcg process code', function () {
                     let planSummary;
                     let planResult;
                     let finalResult;
+                    let outputFile;
                     before(async function () {
                         resetDistribution();
                         await loadDistributionFile(facet.distributionFilePath);
@@ -42,6 +46,8 @@ describe('tcg process code', function () {
                         planSummary = await generateDistributionPlan(() => { });
                         planResult = await executeDistributionPlan(() => { });
                         finalResult = await getDistributionResults();
+                        outputFile = path.join(path.dirname(facet.distributionFilePath),'pass-one-results.csv');
+                        await saveDistributionResultsFile(outputFile);
                     });
                     it('results were returned', function () {
                         expect(distSummary).to.exist;
@@ -77,12 +83,48 @@ describe('tcg process code', function () {
                             expect(payment).has.property('scheduleId');
                         }
                     });
+                    it('creates an output file with expected contents', async function(){
+                        expect(fs.existsSync(outputFile)).to.be.true;
+                        let count = 0;
+                        const stream = fs.createReadStream(outputFile).pipe(parse());
+                        for await (const record of stream) {
+                            if(count === 0) {
+                                expect(record[0]).to.equal('Account');
+                                expect(record[1]).to.equal('Amount');
+                                expect(record[2]).to.equal('Distribution Id');
+                                expect(record[3]).to.equal('Scheduling Tx Id');
+                                expect(record[4]).to.equal('Scheduling Tx Status');
+                                expect(record[5]).to.equal('Countersigning Tx Id');
+                                expect(record[6]).to.equal('Countersigning Tx Status');
+                                expect(record[7]).to.equal('Scheduled Payment Tx Id');
+                                expect(record[8]).to.equal('Scheduled Payment Tx Status');
+                                expect(record[9]).to.equal('Status Description');
+                            } else {
+                                const payment = finalResult.payments[count-1];
+                                expect(record[0]).to.equal(payment.account);
+                                expect(record[1]).to.equal(payment.amount);
+                                expect(record[2]).to.not.be.empty;
+                                expect(record[3]).to.not.be.empty;
+                                expect(record[4]).to.equal('SUCCESS');
+                                expect(record[5]).to.equal('n/a');
+                                expect(record[6]).to.equal('n/a');
+                                expect(record[7]).to.not.be.empty;
+                                expect(record[8]).to.equal('n/a');
+                                expect(record[9]).to.equal(`Scheduling: Awaiting Add'l Signatures`);
+                            }
+                            count = count+1;
+                        }
+                        // Should have read as many records as transfers exist
+                        // plus the header in the CSV file.
+                        expect(count).to.equal(planSummary.transfers.length + 1);
+                    });
                 });
                 describe('distribution pass two', function () {
                     let distSummary;
                     let planSummary;
                     let planResult;
                     let finalResult;
+                    let outputFile;
                     before(async function () {
                         resetDistribution();
                         await loadDistributionFile(facet.distributionFilePath);
@@ -102,6 +144,8 @@ describe('tcg process code', function () {
                         planSummary = await generateDistributionPlan(() => { });
                         planResult = await executeDistributionPlan(() => { });
                         finalResult = await getDistributionResults();
+                        outputFile = path.join(path.dirname(facet.distributionFilePath),'pass-two-results.csv');
+                        await saveDistributionResultsFile(outputFile);
                     });
                     it('results were returned', function () {
                         expect(distSummary).to.exist;
@@ -137,6 +181,41 @@ describe('tcg process code', function () {
                             expect(payment).has.property('scheduleId');
                         }
                     });
+                    it('creates an output file with expected contents', async function(){
+                        expect(fs.existsSync(outputFile)).to.be.true;
+                        let count = 0;
+                        const stream = fs.createReadStream(outputFile).pipe(parse());
+                        for await (const record of stream) {
+                            if(count === 0) {
+                                expect(record[0]).to.equal('Account');
+                                expect(record[1]).to.equal('Amount');
+                                expect(record[2]).to.equal('Distribution Id');
+                                expect(record[3]).to.equal('Scheduling Tx Id');
+                                expect(record[4]).to.equal('Scheduling Tx Status');
+                                expect(record[5]).to.equal('Countersigning Tx Id');
+                                expect(record[6]).to.equal('Countersigning Tx Status');
+                                expect(record[7]).to.equal('Scheduled Payment Tx Id');
+                                expect(record[8]).to.equal('Scheduled Payment Tx Status');
+                                expect(record[9]).to.equal('Status Description');
+                            } else {
+                                const payment = finalResult.payments[count-1];
+                                expect(record[0]).to.equal(payment.account);
+                                expect(record[1]).to.equal(payment.amount);
+                                expect(record[2]).to.not.be.empty;
+                                expect(record[3]).to.not.be.empty;
+                                expect(record[4]).to.equal('IDENTICAL_SCHEDULE_ALREADY_CREATED');
+                                expect(record[5]).to.not.be.empty;
+                                expect(record[6]).to.equal('SUCCESS');
+                                expect(record[7]).to.not.be.empty;
+                                expect(record[8]).to.equal('SUCCESS');
+                                expect(record[9]).to.equal(`Status: Distribution Completed`);
+                            }
+                            count = count+1;
+                        }
+                        // Should have read as many records as transfers exist
+                        // plus the header in the CSV file.
+                        expect(count).to.equal(planSummary.transfers.length + 1);
+                    });                
                 });
             });
         });
