@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '../common/store';
+	import { page, appVersion } from '../common/store';
 	import { invoke } from '../common/ipc';		
 	import { Pages } from '../common/pages';
 
@@ -17,7 +17,7 @@
 </script>
 
 <main>
-	<div class="tcg-logo"></div>
+	<div class="tcg-logo">v{$appVersion}</div>
 	<section>
 		<h1>Upload file</h1>
 		<p>Upload CSV file containing the account ID’s and amounts to distribute</p>

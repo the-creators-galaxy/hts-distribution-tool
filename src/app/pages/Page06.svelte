@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { appVersion } from '../common/store';
 	import { invoke } from '../common/ipc';
 	import DistributionsTable from '../components/DistributionsTable.svelte';
 	import ErrorsTable from '../components/ErrorsTable.svelte';
@@ -48,7 +49,7 @@
 		{#if hasErrors}
 		<header>
 			<h1>Distribution completed with errors</h1>
-			<div class="tcg-logo"></div>
+			<div class="tcg-logo">v{$appVersion}</div>
 		</header>
 		<section>
 			<div class="tcg-error-notice">
@@ -81,7 +82,7 @@
 		{:else}
 		<header>
 			<h1>Distribution completed</h1>
-			<div class="tcg-logo"></div>
+			<div class="tcg-logo">v{$appVersion}</div>
 		</header>
 		<section>
 			<div class="tcg-success-notice">
@@ -105,7 +106,7 @@
 	{:else}
 	<header>
 		<h1>Distribution completed</h1>
-		<div class="tcg-logo"></div>
+		<div class="tcg-logo">v{$appVersion}</div>
 	</header>
 	<section class="loading">
 		<div class="tcg-light-spinner">Loading Results&mldr;</div>

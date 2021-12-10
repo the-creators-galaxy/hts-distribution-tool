@@ -4,3 +4,8 @@ import { writable } from 'svelte/store';
  * currently displayed page.
  */
 export const page = writable(null);
+/**
+ * The current application version retrieved
+ * from the node process (from package.json).
+ */
+export const appVersion = writable('unknown');

@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import type { DistributionPlanSummary } from '../../common/primitives';
 	import { invoke } from '../common/ipc';
-	import { page } from '../common/store';
+	import { page, appVersion } from '../common/store';
 	import ConfirmExecuteDialog from '../components/ConfirmExecuteDialog.svelte';
 	import ErrorsTable from '../components/ErrorsTable.svelte';
 	import PagingController from '../components/PagingController.svelte';
@@ -44,7 +44,7 @@
 <main>
 	<header>
 		<h1>Review distribution plan</h1>
-		<div class="tcg-logo"></div>
+		<div class="tcg-logo">v{$appVersion}</div>
 	</header>
 	{#if plan}
 		{#if hasErrors || hasWarnings}

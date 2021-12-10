@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { page } from '../common/store';
+	import { page, appVersion } from '../common/store';
 	import { invoke } from '../common/ipc';
 	import type { TreasuryInfo } from '../../common/primitives';
 	import { Pages } from '../common/pages';
@@ -71,7 +71,7 @@
 <main>
 	<header>
 		<h1>Enter distribution details</h1>
-		<div class="tcg-logo"></div>
+		<div class="tcg-logo">v{$appVersion}</div>
 	</header>
 	{#if (treasuryInfo)}
 	<section>

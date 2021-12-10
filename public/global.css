@@ -420,6 +420,13 @@ footer > button {
 	background-position: center;
 	width: min(15rem, calc(100vw - 6rem));
 	aspect-ratio: 240 / 47;
+	display: grid;
+	grid-template-columns: max-content 1.2rem;
+	justify-content: end;
+	align-content: end;
+	line-height: 0.1rem;
+	font-size: 0.6rem;
+	color: var(--tcg-white);
 }
 
 .tcg-dark-spinner::after {

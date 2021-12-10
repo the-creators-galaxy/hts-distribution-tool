@@ -1,4 +1,4 @@
-import { BrowserWindow, dialog } from 'electron';
+import { app, BrowserWindow, dialog } from 'electron';
 import { homedir } from 'os';
 /**
  * Displays a native file open dialog box for “csv” files to the user.
@@ -41,4 +41,14 @@ export async function queryUserForOutputFile(): Promise<string> {
 		properties: ['showOverwriteConfirmation'],
 	});
 	return !result.canceled ? result.filePath : null;
+}
+/**
+ * Gets current application version string returned from
+ * the electron app object, this typically matches what is found
+ * in the package.json file.
+ *
+ * @returns the current application version string.
+ */
+export async function getAppVersion(): Promise<string> {
+	return Promise.resolve(app.getVersion());
 }
