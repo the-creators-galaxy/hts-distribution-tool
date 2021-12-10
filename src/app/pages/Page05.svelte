@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { invoke } from '../common/ipc';
-	import { page } from '../common/store';
+	import { page, appVersion } from '../common/store';
 	import DistributionsTable from '../components/DistributionsTable.svelte';
 	import { Pages } from '../common/pages';
 
@@ -28,7 +28,7 @@
 <main>
 	<header>
 		<h1>Scheduling distribution</h1>
-		<div class="tcg-logo"></div>
+		<div class="tcg-logo">v{$appVersion}</div>
 	</header>
 	{#if data}
 	<section>

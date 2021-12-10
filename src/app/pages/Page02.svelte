@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { invoke } from '../common/ipc';
-	import { page } from '../common/store';
+	import { page, appVersion } from '../common/store';
 	import CsvErrorTable from '../components/CsvErrorTable.svelte';	
 	import PagingController from '../components/PagingController.svelte';
 	import RawCsvTable from '../components/RawCsvTable.svelte';
@@ -37,7 +37,7 @@
 <main>	
 	<header>
 		<h1>Review File</h1>
-		<div class="tcg-logo"></div>
+		<div class="tcg-logo">v{$appVersion}</div>
 	</header>
 	{#if csvData}
 		<section>

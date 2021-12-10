@@ -1,6 +1,8 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { invoke } from './common/ipc';
 	import { Pages } from './common/pages';
-	import { page } from './common/store';
+	import { page, appVersion } from './common/store';
 	import Page01 from './pages/Page01.svelte';
 	import Page02 from './pages/Page02.svelte';
 	import Page03 from './pages/Page03.svelte';
@@ -21,6 +23,15 @@
 		}
 		return Page01;
 	}
+
+	onMount(async () => {
+		try {
+			$appVersion = await invoke('get-app-version');
+		} catch(err) {
+			console.error(`Unable to determine the application version: ${err.message || JSON.stringify(err)}`);
+		}
+	});	
+
 </script>
 
 <svelte:component this={displayComponent}/>
