@@ -26,23 +26,23 @@ import type { TxResponse } from './tx-response';
 export class CalaxyClient {
 	/**
 	 * The amount of time the client will wait for a transaction
-	 * response from a remote hedera node.  It is set at 200s which
+	 * response from a remote hedera node.  It is set at 240s which
 	 * is just beyond the limit of a paying transaction’s time to live.
 	 * If a response does not come back the node in this amount of
 	 * time, the client will assume the node has become unhealthy
 	 * and return the appropriate code along with an error message.
 	 */
-	private readonly _defaultTransactionTimeout = 200000;
+	private readonly _defaultTransactionTimeout = 240000;
 	/**
 	 * The amount of time the client will wait for a query response
-	 * from a remote hedera node.  It is set at 30s which is considered
+	 * from a remote hedera node.  It is set at 24s which is considered
 	 * a reasonable amount of time for a single node to respond to
 	 * a non-consensus request.  If a response does not come back the
 	 * node in this amount of time, the client will assume the node has
 	 * become unhealthy and return the appropriate code along with an
 	 * error message.
 	 */
-	private readonly _defaultQueryTimeout = 30000;
+	private readonly _defaultQueryTimeout = 24000;
 	/**
 	 * The HAPI endpoint address and associated crypto
 	 * wallet for the hedera node.
