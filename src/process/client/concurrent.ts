@@ -111,7 +111,24 @@ export async function runClientsConcurrently<T>(
 			tasks.delete(task);
 			if (flagedAsUnhealthy) {
 				if (tasks.size === 0) {
-					resolveTaskLoopPromise();
+					// Try to restart the loop on the hedera node with
+					// one task if there are still a number of tasks
+					// remaining to process. BUT move the restart to
+					// the end of the time slice in case we have a
+					// healthy node that can pick up this recently
+					// failed task instead.  If there are not many tasks
+					// left, just let this thread die.  If all the threads
+					// die and there are still tasks, they will all be
+					// restarted because of the while loop above.
+					setTimeout(function () {
+						if (inputs.length > clients.length) {
+							flagedAsUnhealthy = false;
+							currentlyThrottled = false;
+							runOneTask();
+						} else {
+							resolveTaskLoopPromise();
+						}
+					}, 10);
 				}
 			} else if (inputs.length > 0) {
 				if (currentlyThrottled) {

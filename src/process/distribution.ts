@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { Worker } from 'worker_threads';
 import { stringify } from 'csv-stringify';
 import {
 	AccountBalanceQuery,
@@ -652,6 +653,7 @@ export async function executeDistributionPlan(
 	progress: (any) => void,
 ): Promise<any> {
 	let schedulingInProgress = true;
+	let paymentMonitor = null;
 	let unknownCompletionStatus = [];
 	executionGenerationErrors = [];
 	payments = distributions
@@ -663,10 +665,10 @@ export async function executeDistributionPlan(
 				status: 'Not Started',
 			};
 		});
-	progress({
-		message: 'Scheduling Distribution Payments',
-		payments: payments.map(castDistributionInfo),
+	const summaryWorker = new Worker('./public/build/distribution-worker.js', {
+		workerData: { payments: payments.map(castDistributionInfo) },
 	});
+	summaryWorker.on('message', progress);
 	const clients = await CalaxyClient.filterByPing(
 		networkId === NetworkId.Main
 			? CalaxyClient.forMainnet()
@@ -689,7 +691,9 @@ export async function executeDistributionPlan(
 		monitorPaymentsForCompletion();
 		await runClientsConcurrently(clients, payments, processPayment);
 	}
+	clearTimeout(paymentMonitor);
 	schedulingInProgress = false;
+	await summaryWorker.terminate();
 	return {
 		errors: executionGenerationErrors,
 		payments: payments.map(castDistributionInfo),
@@ -717,9 +721,6 @@ export async function executeDistributionPlan(
 		client: CalaxyClient,
 		payment: PaymentRecord,
 	): Promise<NodeHealth> {
-		progress({
-			message: `Scheduling Distribution Payment to ${payment.account.toString()}`,
-		});
 		payment.inProgress = true;
 		let paymentStage = PaymentStage.Scheduling;
 		while (paymentStage !== PaymentStage.Finished) {
@@ -852,6 +853,12 @@ export async function executeDistributionPlan(
 					case Status.ScheduleAlreadyExecuted:
 					case Status.NoNewValidSignatures:
 						return PaymentStage.Confirming;
+					case Status.InvalidScheduleId:
+						// Let's start over, something went
+						// terribly wrong on the network.
+						payment.schedulingResult = undefined;
+						payment.countersigningResult = undefined;
+						return PaymentStage.Scheduling;
 				}
 			}
 			const { receipt, nodeHealth, error } = (payment.countersigningResult =
@@ -876,6 +883,12 @@ export async function executeDistributionPlan(
 						return PaymentStage.Confirming;
 					case Status.ScheduleAlreadyExecuted:
 						return PaymentStage.Confirming;
+					case Status.InvalidScheduleId:
+						// Let's start over, something went
+						// terribly wrong on the network.
+						payment.schedulingResult = undefined;
+						payment.countersigningResult = undefined;
+						return PaymentStage.Scheduling;
 					default:
 						executionGenerationErrors.push(
 							`Payment no. ${
@@ -964,7 +977,7 @@ export async function executeDistributionPlan(
 		 */
 		function updatePaymentStatusDescription() {
 			payment.status = statusToDescription();
-			progress({ payment: castDistributionInfo(payment) });
+			summaryWorker.postMessage({ payment: castDistributionInfo(payment) });
 			function statusToDescription() {
 				if (payment.confirmationResult) {
 					const status =
@@ -1045,7 +1058,7 @@ export async function executeDistributionPlan(
 					} else if (message.includes('TRANSACTION_EXPIRED')) {
 						return 'Network Node is Throttled';
 					}
-					return error.constructor.name;
+					return error.message || error.constructor.name;
 				}
 				return 'Error without Exception';
 			}
@@ -1065,7 +1078,10 @@ export async function executeDistributionPlan(
 			for (const payment of nextRound) {
 				unknownCompletionStatus.push(payment);
 			}
-			setTimeout(() => monitorPaymentsForCompletion(), 30000).unref();
+			paymentMonitor = setTimeout(
+				() => monitorPaymentsForCompletion(),
+				60000,
+			).unref();
 		}
 		/**
 		 * Attempts to retrieve a receipt for a scheduled and potentially completed
@@ -1100,7 +1116,7 @@ export async function executeDistributionPlan(
 					response.status === Status.Success
 						? 'Status: Distribution Completed'
 						: `Status: ${response.status.toString()}`;
-				progress({ payment: castDistributionInfo(payment) });
+				summaryWorker.postMessage({ payment: castDistributionInfo(payment) });
 			} else {
 				nextRound.push(payment);
 			}

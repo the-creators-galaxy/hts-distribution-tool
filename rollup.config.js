@@ -65,7 +65,26 @@ export default [{
 		}),
 		production && terser()
 	],
-	external: ['electron', 'os', 'fs', 'csv-parse', 'csv-stringify', '@hashgraph/sdk', '@hashgraph/cryptography', '@hashgraph/proto', 'bignumber.js'],
+	external: ['electron', 'os', 'fs', 'csv-parse', 'csv-stringify', 'worker_threads', '@hashgraph/sdk', '@hashgraph/cryptography', '@hashgraph/proto', 'bignumber.js'],
+	watch: {
+		clearScreen: false
+	}
+}, {
+	input: 'src/process/distribution-worker.ts',
+	output: {
+		sourcemap: true,
+		format: 'cjs',
+		file: 'public/build/distribution-worker.js'
+	},
+	plugins: [
+		commonjs(),
+		typescript({
+			sourceMap: !production,
+			inlineSources: !production
+		}),
+		production && terser()
+	],
+	external: ['worker_threads'],
 	watch: {
 		clearScreen: false
 	}
