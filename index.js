@@ -20,7 +20,7 @@ app.on('window-all-closed', function () {
 
 function createWindow() {
     const main = new BrowserWindow({
-        icon: 'public/favicon.png',
+        icon: 'public/app-icon.ico',
         show: false,
         minWidth: 300,
         minHeight: 320,
