@@ -24,12 +24,8 @@ export function validatePrivateKey(value: string): Promise<Signatory> {
 		const privateKey = PrivateKey.fromString(value);
 		const publicKey = privateKey.publicKey;
 		return Promise.resolve({
-			privateKey:
-				'302e020100300506032b657004220420' +
-				Buffer.from(privateKey.toBytes()).toString('hex'),
-			publicKey:
-				'302a300506032b6570032100' +
-				Buffer.from(publicKey.toBytes()).toString('hex'),
+			privateKey: '302e020100300506032b657004220420' + Buffer.from(privateKey.toBytes()).toString('hex'),
+			publicKey: '302a300506032b6570032100' + Buffer.from(publicKey.toBytes()).toString('hex'),
 		});
 	} catch (err) {
 		return Promise.reject(err.message || err.toString());

@@ -1,13 +1,13 @@
 import {
 	AccountId,
 	Client,
-	PrecheckStatusError,
 	ReceiptStatusError,
 	Status,
 	Transaction,
 	TransactionResponse,
 	Query,
 	AccountBalanceQuery,
+	StatusError,
 } from '@hashgraph/sdk';
 import { NodeHealth } from './node-health';
 import type { Gateway } from './gateway';
@@ -77,15 +77,10 @@ export class CalaxyClient {
 	 * @returns Array of `CalaxyClient` instances, one for each
 	 * Hedera Node in the identified network.
 	 */
-	public static forNetwork(network: {
-		[key: string]: string | AccountId;
-	}): CalaxyClient[] {
+	public static forNetwork(network: { [key: string]: string | AccountId }): CalaxyClient[] {
 		var clients = [];
 		for (let [url, nodeValue] of Object.entries(network)) {
-			const node =
-				nodeValue instanceof AccountId
-					? nodeValue
-					: AccountId.fromString(nodeValue);
+			const node = nodeValue instanceof AccountId ? nodeValue : AccountId.fromString(nodeValue);
 			clients.push(new CalaxyClient({ url, node }));
 		}
 		return clients;
@@ -104,10 +99,7 @@ export class CalaxyClient {
 	 * @returns A list of `CalaxyClient` object instances that responded
 	 * without error to the ping request within the required timeout period.
 	 */
-	public static async filterByPing(
-		clients: CalaxyClient[],
-		timeoutInMs: number,
-	): Promise<CalaxyClient[]> {
+	public static async filterByPing(clients: CalaxyClient[], timeoutInMs: number): Promise<CalaxyClient[]> {
 		let tasks = [];
 		let liveNodes = [];
 		for (const client of clients) {
@@ -115,11 +107,7 @@ export class CalaxyClient {
 				runTaskOrTimeout(timeoutInMs, async () => {
 					try {
 						const ping = await client.executeQuery(() =>
-							Promise.resolve(
-								new AccountBalanceQuery()
-									.setAccountId(client._gateway.node)
-									.setNodeAccountIds([client._gateway.node]),
-							),
+							Promise.resolve(new AccountBalanceQuery().setAccountId(client._gateway.node).setNodeAccountIds([client._gateway.node])),
 						);
 						if (ping.response && ping.nodeHealth !== NodeHealth.Unhealthy) {
 							liveNodes.push(client);
@@ -170,9 +158,7 @@ export class CalaxyClient {
 	 * (regardless of the response code status, including error codes)
 	 * otherwise the error property will be populated instead.
 	 */
-	public async executeTransaction(
-		factory: (nodeIds: AccountId[]) => Promise<Transaction>,
-	): Promise<TxResponse> {
+	public async executeTransaction(factory: (nodeIds: AccountId[]) => Promise<Transaction>): Promise<TxResponse> {
 		const result: TxResponse = { nodeHealth: NodeHealth.Healthy };
 		let precheck: TransactionResponse | null = null;
 		const client = Client.forNetwork({
@@ -189,11 +175,8 @@ export class CalaxyClient {
 						}
 					} catch (err) {
 						if (!precheck) {
-							if (err instanceof PrecheckStatusError) {
-								if (
-									err.status === Status.Busy ||
-									err.status === Status.TransactionExpired
-								) {
+							if (err instanceof StatusError) {
+								if (err.status === Status.Busy || err.status === Status.TransactionExpired) {
 									result.nodeHealth = NodeHealth.Throttled;
 								} else {
 									result.error = err;
@@ -209,56 +192,48 @@ export class CalaxyClient {
 				}))
 			) {
 				result.nodeHealth = NodeHealth.Unhealthy;
-				result.error = new Error(
-					'Transaction failed with a timeout during precheck.',
-				);
+				result.error = new Error('Transaction failed with a timeout during precheck.');
 			}
 		}
 		if (precheck) {
 			result.transactionId = precheck.transactionId;
 			while (!result.receipt && !result.error) {
 				if (
-					!(await runTaskOrTimeout(
-						this._defaultTransactionTimeout,
-						async () => {
-							try {
-								const tenativeReceipt = await precheck.getReceipt(client);
-								if (!result.receipt && !result.error) {
-									result.receipt = tenativeReceipt;
-								}
-							} catch (err) {
-								if (!result.receipt && !result.error) {
-									if (err instanceof ReceiptStatusError) {
-										if (
-											err.transactionReceipt.status === Status.Unknown ||
-											err.transactionReceipt.status ===
-												Status.TransactionExpired ||
-											err.transactionReceipt.status === Status.ReceiptNotFound
-										) {
-											result.nodeHealth = NodeHealth.Unhealthy;
-											result.error = err;
-										} else if (err.transactionReceipt.status === Status.Busy) {
-											// Will probably end with receipt not found, but retry anyway.
-											result.nodeHealth = NodeHealth.Throttled;
-										} else {
-											result.receipt = err.transactionReceipt;
-										}
-									} else if (err instanceof Error) {
+					!(await runTaskOrTimeout(this._defaultTransactionTimeout, async () => {
+						try {
+							const tenativeReceipt = await precheck.getReceipt(client);
+							if (!result.receipt && !result.error) {
+								result.receipt = tenativeReceipt;
+							}
+						} catch (err) {
+							if (!result.receipt && !result.error) {
+								if (err instanceof ReceiptStatusError) {
+									if (
+										err.transactionReceipt.status === Status.Unknown ||
+										err.transactionReceipt.status === Status.TransactionExpired ||
+										err.transactionReceipt.status === Status.ReceiptNotFound
+									) {
 										result.nodeHealth = NodeHealth.Unhealthy;
 										result.error = err;
+									} else if (err.transactionReceipt.status === Status.Busy) {
+										// Will probably end with receipt not found, but retry anyway.
+										result.nodeHealth = NodeHealth.Throttled;
 									} else {
-										result.nodeHealth = NodeHealth.Unhealthy;
-										result.error = Error(JSON.stringify(err));
+										result.receipt = err.transactionReceipt;
 									}
+								} else if (err instanceof Error) {
+									result.nodeHealth = NodeHealth.Unhealthy;
+									result.error = err;
+								} else {
+									result.nodeHealth = NodeHealth.Unhealthy;
+									result.error = Error(JSON.stringify(err));
 								}
 							}
-						},
-					))
+						}
+					}))
 				) {
 					result.nodeHealth = NodeHealth.Unhealthy;
-					result.error = new Error(
-						'Transaction failed with a timeout while retrieving receipt.',
-					);
+					result.error = new Error('Transaction failed with a timeout while retrieving receipt.');
 				}
 			}
 		}
@@ -285,9 +260,7 @@ export class CalaxyClient {
 	 * contains an explanation for why the request failed.  The type of
 	 * `response` is dependent upon the type of query requested.
 	 */
-	public async executeQuery<T>(
-		factory: (nodeIds: AccountId[]) => Promise<Query<T>>,
-	): Promise<QryResponse<T>> {
+	public async executeQuery<T>(factory: (nodeIds: AccountId[]) => Promise<Query<T>>): Promise<QryResponse<T>> {
 		const result: QryResponse<T> = { nodeHealth: NodeHealth.Healthy };
 		const client = Client.forNetwork({
 			[this._gateway.url]: this._gateway.node,
@@ -303,11 +276,8 @@ export class CalaxyClient {
 						}
 					} catch (err) {
 						if (!result.response && !result.error) {
-							if (err instanceof PrecheckStatusError) {
-								if (
-									err.status === Status.Busy ||
-									err.status === Status.TransactionExpired
-								) {
+							if (err instanceof StatusError) {
+								if (err.status === Status.Busy || err.status === Status.TransactionExpired) {
 									result.nodeHealth = NodeHealth.Throttled;
 								} else {
 									result.error = err;
@@ -346,10 +316,7 @@ export class CalaxyClient {
  * @returns `true` if the taskRunner completed before the timeout,
  * `false` if id did not.
  */
-function runTaskOrTimeout(
-	miliseconds: number,
-	taskRunner: () => Promise<void>,
-): Promise<boolean> {
+function runTaskOrTimeout(miliseconds: number, taskRunner: () => Promise<void>): Promise<boolean> {
 	return new Promise((resolve, reject) => {
 		let completed = false;
 		let handle = setTimeout(resolveByTimeout, miliseconds);
