@@ -383,7 +383,7 @@ export async function generateDistributionPlan(progress: (any) => void): Promise
 		return { account, amount };
 	});
 
-	const clients = await CalaxyClient.filterByPing(networkId === NetworkId.Main ? CalaxyClient.forMainnet() : CalaxyClient.forTestnet(), 500);
+	const clients = await getReachableClientList();
 	try {
 		if (checkPrerequisites() && (await confirmAccountsExist())) {
 			verifyTreasuryTokenBalance();
@@ -589,7 +589,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 		workerData: { payments: payments.map(castDistributionInfo) },
 	});
 	summaryWorker.on('message', progress);
-	const clients = await CalaxyClient.filterByPing(networkId === NetworkId.Main ? CalaxyClient.forMainnet() : CalaxyClient.forTestnet(), 500);
+	const clients = await getReachableClientList();
 	if (clients.length === 0) {
 		executionGenerationErrors.push('The Network Nodes appear to be too busy to process distributions at this time.');
 	} else if (csvErrors.length > 0 || tokenInfoErrors.length > 0 || preGenerationErrors.length > 0) {
@@ -1003,9 +1003,9 @@ export function saveDistributionResultsFile(filePath: string): Promise<void> {
 			'Status Description',
 		]);
 		for (const payment of payments) {
-			const confirmationStatus = payment.confirmationResult.response?.status || (payment.confirmationResult.error as StatusError)?.status;
+			const confirmationStatus = payment.confirmationResult?.response?.status || (payment.confirmationResult?.error as StatusError)?.status;
 			const countersignStatus = payment.countersigningResult?.receipt?.status || (payment.countersigningResult?.error as StatusError)?.status;
-			const schedulingStatus = payment.schedulingResult.receipt?.status || (payment.schedulingResult.error as StatusError)?.status;
+			const schedulingStatus = payment.schedulingResult?.receipt?.status || (payment.schedulingResult?.error as StatusError)?.status;
 			stringifier.write([
 				payment.account.toString(),
 				payment.amountInTinyToken.shiftedBy(-tokenDecimals).toString(),
@@ -1068,4 +1068,25 @@ function castDistributionInfo(info: PaymentRecord) {
 		paymentStatus: info.confirmationResult?.response?.status?.toString(),
 		inProgress: !!info.inProgress,
 	};
+}
+/**
+ * Helper function that retrieves a list of `CalaxyClient` nodes that are
+ * presently appear to be reachable and responsive.  The algorithm attempts
+ * to pick nodes that return within 250ms, if 2/3 of the network is not
+ * responsive enough, it will retry with a longer wait period, up to a test
+ * limit of 3 seconds.  It is possible that no nodes respond in a reasonable
+ * time resulting in an empty array.
+ *
+ * @returns the list of the fastest responding hedera nodes for the selected
+ * network, or an empty array if no nodes respond in the alloted timeout of
+ * three seconds.
+ */
+async function getReachableClientList(): Promise<CalaxyClient[]> {
+	let clients: CalaxyClient[] = [];
+	const candidates = networkId === NetworkId.Main ? CalaxyClient.forMainnet() : CalaxyClient.forTestnet();
+	const targetCount = Math.max((2 * candidates.length) / 3, 1);
+	for (let i = 1; i < 13 && clients.length < targetCount; i++) {
+		clients = await CalaxyClient.filterByPing(candidates, i * 250);
+	}
+	return clients;
 }

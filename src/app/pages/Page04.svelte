@@ -13,6 +13,7 @@
 	let selectedTab = 0;
 	let hasErrors = false;
 	let hasWarnings = false;
+	let showTryAgain = false;
 	let progress = '';
 	let plan: DistributionPlanSummary;
 
@@ -24,16 +25,32 @@
 	let pagedErrorData = [];
 	let confirmDialog: ConfirmExecuteDialog;
 
-
 	onMount(async () => {
+		await generateDistributionPlan();
+	});	
+
+	async function generateDistributionPlan() {
 		plan = await invoke('generate-distribution-plan', p => progress = p);
 		hasErrors = plan.errors.length > 0;
 		hasWarnings = plan.warnings.length > 0;		
 		selectedTab = hasErrors ? 1 : ( hasWarnings ? 2 : 0);
-	});	
+		showTryAgain = plan.transfers.length === 0 && plan.errors.length > 0 && plan.errors[0] === 'Unable to reach any network nodes at this time.';
+	}
+
+	async function clickTryAgain() {
+		selectedTab = 0;
+		hasErrors = false;
+		hasWarnings = false;
+		showTryAgain = false;
+		progress = '';
+		plan = undefined;
+		await generateDistributionPlan();
+	}
+
 	function clickGoBack() {
 		$page = Pages.page03;
 	}
+
 	async function clickContinue() {
 		if(!hasWarnings || (await confirmDialog.confirmExecutePlan())) {
 			$page = Pages.page05;
@@ -114,6 +131,8 @@
 				{:else}
 				<button on:click={clickContinue} class="action">Execute plan</button>
 				{/if}
+			{:else if showTryAgain}
+				<button on:click={clickTryAgain} class="action">Try again</button>
 			{/if}
 		</footer>
 	{:else}
