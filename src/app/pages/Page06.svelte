@@ -1,14 +1,16 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { appVersion } from '../common/store';
+	import { appVersion, page } from '../common/store';
 	import { invoke } from '../common/ipc';
 	import DistributionsTable from '../components/DistributionsTable.svelte';
 	import ErrorsTable from '../components/ErrorsTable.svelte';
 	import PagingController from '../components/PagingController.svelte';
+	import { Pages } from '../common/pages';
 
 	let selectedTab = 0;
 	let results = null;
 	let hasErrors = false;
+	let showRetry = false;
 
 	let transferPageNo = 1;
 	let errorsPageNo = 1;
@@ -28,6 +30,7 @@
 		}
 		hasErrors = results.errors.length > 0;
 		selectedTab = hasErrors ? 1 : 0;
+		showRetry = results.payments.length > 0 && results.errors.length > 0 && results.errors[0] === 'The Network Nodes appear to be too busy to process distributions at this time.';
 	});	
 
 	async function saveResultsToFile(): Promise<void> {
@@ -35,12 +38,20 @@
 		const filename = await invoke('query-user-for-output-file');
 		if(filename) {
 			try {
-			await invoke('save-results-output-file', filename);
+				await invoke('save-results-output-file', filename);
 			} catch(err) {
 				alert(`Sorry, an unexpected error occurred: ${err.message || JSON.stringify(err)}`);
 			}
 		}
 		saving = false;
+	}
+
+	function clickTryAgain() {
+		$page = Pages.page05;
+	}
+
+	function clickGoBack(){
+		$page = Pages.page04;
 	}
 </script>
 
@@ -79,6 +90,12 @@
 				{/if}
 			</div>
 		</section>
+			{#if showRetry}
+				<footer>
+					<button on:click={clickGoBack} class="secondary tcg-left-arrow-light">Go Back</button>
+					<button on:click={clickTryAgain} class="action">Try again</button>
+				</footer>
+			{/if}
 		{:else}
 		<header>
 			<h1>Distribution completed</h1>
@@ -115,9 +132,6 @@
 </main>
 
 <style>
-	main {
-		grid-template-rows: max-content 1fr;
-	}
 	section {
 		grid-template-rows: max-content max-content 1fr ;
 	}
