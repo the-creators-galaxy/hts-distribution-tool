@@ -55,16 +55,8 @@ function generateSummary() {
 		}
 	}
 	const inProgressPayments = payments.filter((p) => p.inProgress);
-	const percent = Math.min(
-		99.9,
-		payments.length > 0 ? (100 * completedCount) / payments.length : 0,
-	);
-	const percentDisplay =
-		percent > 10
-			? percent.toFixed(1)
-			: percent > 1
-			? percent.toFixed(2)
-			: percent.toFixed(3);
+	const percent = Math.min(99.9, payments.length > 0 ? (100 * completedCount) / payments.length : 0);
+	const percentDisplay = percent > 10 ? percent.toFixed(1) : percent > 1 ? percent.toFixed(2) : percent.toFixed(3);
 	const statusMessage = `Scheduling Payments, ${percentDisplay}% complete.`;
 	pendingUpdate = null;
 	parentPort.postMessage({

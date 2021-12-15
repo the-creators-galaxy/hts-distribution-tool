@@ -11,11 +11,7 @@ import {
 	setTreasuryInformation,
 } from './distribution';
 import { validatePrivateKey } from './keys';
-import {
-	getAppVersion,
-	queryUserForCsvFile,
-	queryUserForOutputFile,
-} from './ui';
+import { getAppVersion, queryUserForCsvFile, queryUserForOutputFile } from './ui';
 /**
  * The registry of supported/whitelisted methods executing in the
  * node process thread that can be invoked from the Electron User

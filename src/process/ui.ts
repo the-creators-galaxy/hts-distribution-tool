@@ -18,9 +18,7 @@ export async function queryUserForCsvFile(): Promise<string> {
 		],
 		properties: ['openFile'],
 	});
-	return !result.canceled && result.filePaths.length == 1
-		? result.filePaths[0]
-		: null;
+	return !result.canceled && result.filePaths.length == 1 ? result.filePaths[0] : null;
 }
 /**
  * Displays a native file save dialog for the output “csv” file to the user.

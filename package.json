@@ -12,7 +12,7 @@
     "start": "electron .",
     "dist": "npm run build && electron-builder",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "format": "prettier --config .prettierrc.json src/**/*.ts --write",
+    "format": "prettier --config .prettierrc.json src/**/*.ts test/**/*.ts --write",
     "test": "mocha -r ts-node/register -r dotenv/config test/**/*.spec.ts",
     "test:unit": "mocha -r ts-node/register -r dotenv/config test/unit/**/*.spec.ts",
     "test:integration": "mocha -r ts-node/register -r dotenv/config test/integration/**/*.spec.ts"

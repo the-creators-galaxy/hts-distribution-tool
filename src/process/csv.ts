@@ -77,9 +77,7 @@ export interface CsvParseData {
  * @returns Summary results from loading and parsing the file,
  * including errors.
  */
-export async function loadAndParseCsvDistributionFile(
-	filename: string,
-): Promise<CsvParseData> {
+export async function loadAndParseCsvDistributionFile(filename: string): Promise<CsvParseData> {
 	let data = [];
 	let columns = 2;
 	let rows = 0;
@@ -97,10 +95,7 @@ export async function loadAndParseCsvDistributionFile(
 					relax_column_count: true,
 					onRecord: (items, info) => {
 						rows = rows + 1;
-						if (
-							info.error &&
-							info.error.code !== 'CSV_INCONSISTENT_RECORD_LENGTH'
-						) {
+						if (info.error && info.error.code !== 'CSV_INCONSISTENT_RECORD_LENGTH') {
 							errors.push({
 								line: rows,
 								column: 0,
@@ -121,8 +116,7 @@ export async function loadAndParseCsvDistributionFile(
 							errors.push({
 								line: rows,
 								column: 1,
-								description:
-									'Expected to find Crypto Address in column 1 and distribution amount in column 2.',
+								description: 'Expected to find Crypto Address in column 1 and distribution amount in column 2.',
 							});
 							return items;
 						}
@@ -134,9 +128,7 @@ export async function loadAndParseCsvDistributionFile(
 							errors.push({
 								line: rows,
 								column: 1,
-								description: `Unable to parse Account ID: ${
-									err.message || err
-								}`,
+								description: `Unable to parse Account ID: ${err.message || err}`,
 							});
 							return items;
 						}
@@ -163,9 +155,7 @@ export async function loadAndParseCsvDistributionFile(
 							errors.push({
 								line: rows,
 								column: 2,
-								description: `Unable to parse amount of distribution: ${
-									err.message || err
-								}`,
+								description: `Unable to parse amount of distribution: ${err.message || err}`,
 							});
 							return items;
 						}
@@ -194,10 +184,7 @@ export async function loadAndParseCsvDistributionFile(
  * otherwise zero.
  */
 function compareTransfers(xfer1, xfer2) {
-	return (
-		compareAddresses(xfer1.account, xfer2.account) ||
-		compareBigNumber(xfer1.amount, xfer2.amount)
-	);
+	return compareAddresses(xfer1.account, xfer2.account) || compareBigNumber(xfer1.amount, xfer2.amount);
 }
 /**
  * Helper compare function for sorting address id’s by shard, realm and number.
@@ -208,11 +195,7 @@ function compareTransfers(xfer1, xfer2) {
  * otherwise zero.
  */
 function compareAddresses(account1: AccountId, account2: AccountId) {
-	return (
-		account1.shard.compare(account2.shard) ||
-		account1.realm.compare(account2.realm) ||
-		account1.num.compare(account2.num)
-	);
+	return account1.shard.compare(account2.shard) || account1.realm.compare(account2.realm) || account1.num.compare(account2.num);
 }
 /**
  * Helper compare function for sorting amount by value.

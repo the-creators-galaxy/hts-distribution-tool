@@ -4,7 +4,6 @@ import { stringify } from 'csv-stringify';
 import {
 	AccountBalanceQuery,
 	AccountId,
-	PrecheckStatusError,
 	PrivateKey,
 	ScheduleCreateTransaction,
 	ScheduleSignTransaction,
@@ -17,14 +16,7 @@ import {
 } from '@hashgraph/sdk';
 import type AccountBalance from '@hashgraph/sdk/lib/account/AccountBalance';
 import { BigNumber } from 'bignumber.js';
-import {
-	CsvDataSummary,
-	CsvParseError,
-	DistributionPlanSummary,
-	NetworkId,
-	Signatory,
-	TreasuryInfo,
-} from '../common/primitives';
+import { CsvDataSummary, CsvParseError, DistributionPlanSummary, NetworkId, Signatory, TreasuryInfo } from '../common/primitives';
 import { CalaxyClient } from './client/client';
 import { runClientsConcurrently } from './client/concurrent';
 import { NodeHealth } from './client/node-health';
@@ -311,12 +303,8 @@ export function getTreasuryInformation(): Promise<TreasuryInfo> {
 		tokenTreasury: tokenTreasuryId?.toString(),
 		signatories: (signatories || []).map((pKey) => {
 			return {
-				privateKey:
-					'302e020100300506032b657004220420' +
-					Buffer.from(pKey.toBytes()).toString('hex'),
-				publicKey:
-					'302a300506032b6570032100' +
-					Buffer.from(pKey.publicKey.toBytes()).toString('hex'),
+				privateKey: '302e020100300506032b657004220420' + Buffer.from(pKey.toBytes()).toString('hex'),
+				publicKey: '302a300506032b6570032100' + Buffer.from(pKey.publicKey.toBytes()).toString('hex'),
 			};
 		}),
 	});
@@ -344,9 +332,7 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 		try {
 			return AccountId.fromString(value);
 		} catch (err) {
-			tokenInfoErrors.push(
-				`Invalid ${description}: ${err.message || err.toString()}`,
-			);
+			tokenInfoErrors.push(`Invalid ${description}: ${err.message || err.toString()}`);
 			return null;
 		}
 	}
@@ -355,9 +341,7 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 		try {
 			return TokenId.fromString(value);
 		} catch (err) {
-			tokenInfoErrors.push(
-				`Invalid ${description}: ${err.message || err.toString()}`,
-			);
+			tokenInfoErrors.push(`Invalid ${description}: ${err.message || err.toString()}`);
 			return null;
 		}
 	}
@@ -368,9 +352,7 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 			try {
 				result.push(PrivateKey.fromString(signatory.privateKey));
 			} catch (err) {
-				tokenInfoErrors.push(
-					`Invalid Private Key: ${err.message || err.toString()}`,
-				);
+				tokenInfoErrors.push(`Invalid Private Key: ${err.message || err.toString()}`);
 				return null;
 			}
 		}
@@ -390,9 +372,7 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
  * including errors and warnings if they were found. This object is created
  * in an IPC marshaling friendly format.
  */
-export async function generateDistributionPlan(
-	progress: (any) => void,
-): Promise<DistributionPlanSummary> {
+export async function generateDistributionPlan(progress: (any) => void): Promise<DistributionPlanSummary> {
 	// Reset any previously generated plan.
 	preGenerationErrors = [];
 	preGenerationWarnings = [];
@@ -403,12 +383,7 @@ export async function generateDistributionPlan(
 		return { account, amount };
 	});
 
-	const clients = await CalaxyClient.filterByPing(
-		networkId === NetworkId.Main
-			? CalaxyClient.forMainnet()
-			: CalaxyClient.forTestnet(),
-		500,
-	);
+	const clients = await CalaxyClient.filterByPing(networkId === NetworkId.Main ? CalaxyClient.forMainnet() : CalaxyClient.forTestnet(), 500);
 	try {
 		if (checkPrerequisites() && (await confirmAccountsExist())) {
 			verifyTreasuryTokenBalance();
@@ -427,9 +402,7 @@ export async function generateDistributionPlan(
 			.map((distribution) => {
 				return {
 					account: distribution.account.toString(),
-					amount: distribution.amountInTinyToken
-						.shiftedBy(-tokenDecimals)
-						.toString(),
+					amount: distribution.amountInTinyToken.shiftedBy(-tokenDecimals).toString(),
 				};
 			}),
 	};
@@ -443,15 +416,11 @@ export async function generateDistributionPlan(
 	function checkPrerequisites(): boolean {
 		progress(`Checking prerequisites ...`);
 		if (csvErrors.length > 0 || tokenInfoErrors.length > 0) {
-			preGenerationErrors.push(
-				'There are errors in the CSV Distribution file and/or Token Details, please correct before continuing.',
-			);
+			preGenerationErrors.push('There are errors in the CSV Distribution file and/or Token Details, please correct before continuing.');
 			return false;
 		}
 		if (clients.length === 0) {
-			preGenerationErrors.push(
-				'Unable to reach any network nodes at this time.',
-			);
+			preGenerationErrors.push('Unable to reach any network nodes at this time.');
 			return false;
 		}
 		return true;
@@ -467,46 +436,27 @@ export async function generateDistributionPlan(
 	async function confirmAccountsExist(): Promise<boolean> {
 		let checkedBalanceCount = 0;
 		progress(`Verifying treasury and paying accounts ...`);
-		const subitBalances = await getSourceAccountBalances(
-			submitPayerId,
-			'Submit Payer Account',
-		);
-		const transferBalances = await getSourceAccountBalances(
-			transferPayerId,
-			'Transfer Payer Account',
-		);
-		const treasuryBalances = await getSourceAccountBalances(
-			tokenTreasuryId,
-			'Treasury Account',
-		);
+		const subitBalances = await getSourceAccountBalances(submitPayerId, 'Submit Payer Account');
+		const transferBalances = await getSourceAccountBalances(transferPayerId, 'Transfer Payer Account');
+		const treasuryBalances = await getSourceAccountBalances(tokenTreasuryId, 'Treasury Account');
 		if (!subitBalances || !transferBalances || !treasuryBalances) {
 			// No point in spending the time verifying recipients yet.
 			return false;
 		}
 		const treasuryTokenBalanceAsLong = treasuryBalances.tokens.get(tokenId);
 		if (!treasuryTokenBalanceAsLong) {
-			preGenerationErrors.push(
-				`Treasury Account ${tokenTreasuryId.toString()} does not hold the token ${tokenId.toString()}.`,
-			);
+			preGenerationErrors.push(`Treasury Account ${tokenTreasuryId.toString()} does not hold the token ${tokenId.toString()}.`);
 			return false;
 		} else {
-			tokenTreasuryBalance = new BigNumber(
-				treasuryTokenBalanceAsLong.toString(),
-			);
+			tokenTreasuryBalance = new BigNumber(treasuryTokenBalanceAsLong.toString());
 			tokenDecimals = treasuryBalances.tokenDecimals.get(tokenId);
 		}
 		distributions
 			.filter((distribution) => tokenTreasuryId.equals(distribution.account))
 			.forEach((distribution) => {
-				preGenerationErrors.push(
-					`Distribution account ${distribution.account} is the same address as the treasury.`,
-				);
+				preGenerationErrors.push(`Distribution account ${distribution.account} is the same address as the treasury.`);
 			});
-		await runClientsConcurrently(
-			clients,
-			distributions,
-			getReceivingAccountBalance,
-		);
+		await runClientsConcurrently(clients, distributions, getReceivingAccountBalance);
 		progress('Done Retrieving Accounts Information.');
 		return true;
 		/**
@@ -525,24 +475,14 @@ export async function generateDistributionPlan(
 		 * is returned, the calling coordinator will stop using the associated remote
 		 * node for a period of time and rely on other more healthy nodes.
 		 */
-		async function getReceivingAccountBalance(
-			client: CalaxyClient,
-			distribution: Distribution,
-		): Promise<NodeHealth> {
+		async function getReceivingAccountBalance(client: CalaxyClient, distribution: Distribution): Promise<NodeHealth> {
 			const { response, nodeHealth, error } = await client.executeQuery(() =>
-				Promise.resolve(
-					new AccountBalanceQuery().setAccountId(distribution.account),
-				),
+				Promise.resolve(new AccountBalanceQuery().setAccountId(distribution.account)),
 			);
 			if (nodeHealth !== NodeHealth.Unhealthy) {
 				if (error) {
-					if (
-						error instanceof PrecheckStatusError &&
-						error.status === Status.InvalidAccountId
-					) {
-						preGenerationWarnings.push(
-							`Receiving account at ${distribution.account.toString()} does not exist.`,
-						);
+					if (error instanceof StatusError && error.status === Status.InvalidAccountId) {
+						preGenerationWarnings.push(`Receiving account at ${distribution.account.toString()} does not exist.`);
 					} else {
 						preGenerationWarnings.push(
 							`${distribution.account.toString()} will be excluded from the distribution, Unable to verify it exists: ${
@@ -554,9 +494,7 @@ export async function generateDistributionPlan(
 					distribution.balances = response;
 				}
 				checkedBalanceCount = checkedBalanceCount + 1;
-				progress(
-					`Checking ${checkedBalanceCount} of ${distributions.length} distribution accounts.`,
-				);
+				progress(`Checking ${checkedBalanceCount} of ${distributions.length} distribution accounts.`);
 			}
 			return nodeHealth;
 		}
@@ -567,27 +505,13 @@ export async function generateDistributionPlan(
 		 * @param description Description of the account for error reporting purposes (if required).
 		 * @returns The account balance information queried from the hedera network.
 		 */
-		async function getSourceAccountBalances(
-			accountId: AccountId,
-			description: string,
-		): Promise<AccountBalance> {
-			const { response, error } = await clients[0].executeQuery(() =>
-				Promise.resolve(new AccountBalanceQuery().setAccountId(accountId)),
-			);
+		async function getSourceAccountBalances(accountId: AccountId, description: string): Promise<AccountBalance> {
+			const { response, error } = await clients[0].executeQuery(() => Promise.resolve(new AccountBalanceQuery().setAccountId(accountId)));
 			if (error) {
-				if (
-					error instanceof PrecheckStatusError &&
-					error.status === Status.InvalidAccountId
-				) {
-					preGenerationErrors.push(
-						`${description} at ${accountId.toString()} does not exist.`,
-					);
+				if (error instanceof StatusError && error.status === Status.InvalidAccountId) {
+					preGenerationErrors.push(`${description} at ${accountId.toString()} does not exist.`);
 				} else {
-					preGenerationErrors.push(
-						`Unable to verify ${description} at ${accountId.toString()}: ${
-							error.message || error.toString()
-						}`,
-					);
+					preGenerationErrors.push(`Unable to verify ${description} at ${accountId.toString()}: ${error.message || error.toString()}`);
 				}
 				return null;
 			} else {
@@ -608,15 +532,15 @@ export async function generateDistributionPlan(
 				const tokenBalance = distribution.balances.tokens.get(tokenId);
 				if (tokenBalance === null) {
 					preGenerationWarnings.push(
-						`${distribution.account.toString()} will be excluded from the distribution, it does not appear to be associated with the token.`,
+						`Account ${distribution.account.toString()} does not appear to be associated with this token, if the account has not enabled auto-association, this distribuiton can fail.`,
 					);
-				} else if (distribution.amount.decimalPlaces() > tokenDecimals) {
+				}
+				if (distribution.amount.decimalPlaces() > tokenDecimals) {
 					preGenerationErrors.push(
 						`Distribution account ${distribution.account.toString()} amount decimal places exceed token decimal places of ${tokenDecimals}.`,
 					);
 				} else {
-					distribution.amountInTinyToken =
-						distribution.amount.shiftedBy(tokenDecimals);
+					distribution.amountInTinyToken = distribution.amount.shiftedBy(tokenDecimals);
 					totalTransfers = totalTransfers.plus(distribution.amountInTinyToken);
 				}
 			}
@@ -627,9 +551,7 @@ export async function generateDistributionPlan(
 			);
 		}
 		if (!distributions.find((d) => !!d.amountInTinyToken)) {
-			preGenerationErrors.push(
-				`Could not find any accounts in the list that are associated with token ${tokenId.toString()}.`,
-			);
+			preGenerationErrors.push(`Could not find any accounts in the list that are associated with token ${tokenId.toString()}.`);
 		}
 	}
 }
@@ -649,9 +571,7 @@ export async function generateDistributionPlan(
  * app sees them and a list of any errors that may indicate one or more distribution
  * payments failed.
  */
-export async function executeDistributionPlan(
-	progress: (any) => void,
-): Promise<any> {
+export async function executeDistributionPlan(progress: (any) => void): Promise<any> {
 	let schedulingInProgress = true;
 	let paymentMonitor = null;
 	let unknownCompletionStatus = [];
@@ -669,24 +589,11 @@ export async function executeDistributionPlan(
 		workerData: { payments: payments.map(castDistributionInfo) },
 	});
 	summaryWorker.on('message', progress);
-	const clients = await CalaxyClient.filterByPing(
-		networkId === NetworkId.Main
-			? CalaxyClient.forMainnet()
-			: CalaxyClient.forTestnet(),
-		500,
-	);
+	const clients = await CalaxyClient.filterByPing(networkId === NetworkId.Main ? CalaxyClient.forMainnet() : CalaxyClient.forTestnet(), 500);
 	if (clients.length === 0) {
-		executionGenerationErrors.push(
-			'The Network Nodes appear to be too busy to process distributions at this time.',
-		);
-	} else if (
-		csvErrors.length > 0 ||
-		tokenInfoErrors.length > 0 ||
-		preGenerationErrors.length > 0
-	) {
-		executionGenerationErrors.push(
-			'There are errors with distribution plan that prevent execution.',
-		);
+		executionGenerationErrors.push('The Network Nodes appear to be too busy to process distributions at this time.');
+	} else if (csvErrors.length > 0 || tokenInfoErrors.length > 0 || preGenerationErrors.length > 0) {
+		executionGenerationErrors.push('There are errors with distribution plan that prevent execution.');
 	} else {
 		monitorPaymentsForCompletion();
 		await runClientsConcurrently(clients, payments, processPayment);
@@ -717,10 +624,7 @@ export async function executeDistributionPlan(
 	 * connections occurred `Unhealthy` should be returned and the calling
 	 * orchestrator will not re-use this client node for a period of time.
 	 */
-	async function processPayment(
-		client: CalaxyClient,
-		payment: PaymentRecord,
-	): Promise<NodeHealth> {
+	async function processPayment(client: CalaxyClient, payment: PaymentRecord): Promise<NodeHealth> {
 		payment.inProgress = true;
 		let paymentStage = PaymentStage.Scheduling;
 		while (paymentStage !== PaymentStage.Finished) {
@@ -748,10 +652,7 @@ export async function executeDistributionPlan(
 		payment.inProgress = false;
 		updatePaymentStatusDescription();
 		return (
-			payment.confirmationResult?.nodeHealth ||
-			payment.countersigningResult?.nodeHealth ||
-			payment.schedulingResult?.nodeHealth ||
-			NodeHealth.Healthy
+			payment.confirmationResult?.nodeHealth || payment.countersigningResult?.nodeHealth || payment.schedulingResult?.nodeHealth || NodeHealth.Healthy
 		);
 		/**
 		 * Attempts to schedule a payment for this distribution on the hedera network.
@@ -774,30 +675,21 @@ export async function executeDistributionPlan(
 						return PaymentStage.Countersigning;
 				}
 			}
-			const { receipt, nodeHealth, error } = (payment.schedulingResult =
-				await client.executeTransaction(async (nodeIds) => {
-					const transactionToSchedule = new TransferTransaction()
-						.addTokenTransfer(
-							tokenId,
-							tokenTreasuryId,
-							-payment.amountInTinyToken,
-						)
-						.addTokenTransfer(
-							tokenId,
-							payment.account,
-							+payment.amountInTinyToken,
-						);
-					const transaction = new ScheduleCreateTransaction()
-						.setPayerAccountId(transferPayerId)
-						.setScheduledTransaction(transactionToSchedule)
-						.setTransactionId(TransactionId.generate(submitPayerId))
-						.setNodeAccountIds(nodeIds)
-						.freeze();
-					for (const signatory of signatories) {
-						await transaction.sign(signatory);
-					}
-					return transaction;
-				}));
+			const { receipt, nodeHealth, error } = (payment.schedulingResult = await client.executeTransaction(async (nodeIds) => {
+				const transactionToSchedule = new TransferTransaction()
+					.addTokenTransfer(tokenId, tokenTreasuryId, -payment.amountInTinyToken)
+					.addTokenTransfer(tokenId, payment.account, +payment.amountInTinyToken);
+				const transaction = new ScheduleCreateTransaction()
+					.setPayerAccountId(transferPayerId)
+					.setScheduledTransaction(transactionToSchedule)
+					.setTransactionId(TransactionId.generate(submitPayerId))
+					.setNodeAccountIds(nodeIds)
+					.freeze();
+				for (const signatory of signatories) {
+					await transaction.sign(signatory);
+				}
+				return transaction;
+			}));
 			if (nodeHealth === NodeHealth.Unhealthy) {
 				return PaymentStage.Unhealthy;
 			} else if (receipt) {
@@ -808,9 +700,7 @@ export async function executeDistributionPlan(
 						return PaymentStage.Countersigning;
 					default:
 						executionGenerationErrors.push(
-							`Payment no. ${
-								payment.index
-							} to ${payment.account.toString()} scheduling failed with code ${receipt.status.toString()}.`,
+							`Payment no. ${payment.index} to ${payment.account.toString()} scheduling failed with code ${receipt.status.toString()}.`,
 						);
 						return PaymentStage.Failed;
 				}
@@ -820,18 +710,12 @@ export async function executeDistributionPlan(
 						return PaymentStage.Scheduling;
 					}
 					executionGenerationErrors.push(
-						`Payment no. ${
-							payment.index
-						} to ${payment.account.toString()} scheduling failed with code ${error.status.toString()}.`,
+						`Payment no. ${payment.index} to ${payment.account.toString()} scheduling failed with code ${error.status.toString()}.`,
 					);
 					return PaymentStage.Failed;
 				}
 			}
-			executionGenerationErrors.push(
-				`Payment no. ${
-					payment.index
-				} to ${payment.account.toString()} scheduling failed for an unknown reason.`,
-			);
+			executionGenerationErrors.push(`Payment no. ${payment.index} to ${payment.account.toString()} scheduling failed for an unknown reason.`);
 			return PaymentStage.Failed;
 		}
 		/**
@@ -861,26 +745,23 @@ export async function executeDistributionPlan(
 						return PaymentStage.Scheduling;
 				}
 			}
-			const { receipt, nodeHealth, error } = (payment.countersigningResult =
-				await client.executeTransaction(async (nodeIds) => {
-					const transaction = new ScheduleSignTransaction()
-						.setScheduleId(payment.schedulingResult.receipt.scheduleId)
-						.setTransactionId(TransactionId.generate(submitPayerId))
-						.setNodeAccountIds(nodeIds)
-						.freeze();
-					for (const signatory of signatories) {
-						await transaction.sign(signatory);
-					}
-					return transaction;
-				}));
+			const { receipt, nodeHealth, error } = (payment.countersigningResult = await client.executeTransaction(async (nodeIds) => {
+				const transaction = new ScheduleSignTransaction()
+					.setScheduleId(payment.schedulingResult.receipt.scheduleId)
+					.setTransactionId(TransactionId.generate(submitPayerId))
+					.setNodeAccountIds(nodeIds)
+					.freeze();
+				for (const signatory of signatories) {
+					await transaction.sign(signatory);
+				}
+				return transaction;
+			}));
 			if (nodeHealth === NodeHealth.Unhealthy) {
 				return PaymentStage.Unhealthy;
 			} else if (receipt) {
 				switch (receipt.status) {
 					case Status.Success:
-						return PaymentStage.Confirming;
 					case Status.NoNewValidSignatures:
-						return PaymentStage.Confirming;
 					case Status.ScheduleAlreadyExecuted:
 						return PaymentStage.Confirming;
 					case Status.InvalidScheduleId:
@@ -891,9 +772,7 @@ export async function executeDistributionPlan(
 						return PaymentStage.Scheduling;
 					default:
 						executionGenerationErrors.push(
-							`Payment no. ${
-								payment.index
-							} to ${payment.account.toString()} countersigning failed with code ${receipt.status.toString()}.`,
+							`Payment no. ${payment.index} to ${payment.account.toString()} countersigning failed with code ${receipt.status.toString()}.`,
 						);
 						return PaymentStage.Failed;
 				}
@@ -903,18 +782,12 @@ export async function executeDistributionPlan(
 						return PaymentStage.Countersigning;
 					}
 					executionGenerationErrors.push(
-						`Payment no. ${
-							payment.index
-						} to ${payment.account.toString()} countersigning failed with code ${error.status.toString()}.`,
+						`Payment no. ${payment.index} to ${payment.account.toString()} countersigning failed with code ${error.status.toString()}.`,
 					);
 					return PaymentStage.Failed;
 				}
 			}
-			executionGenerationErrors.push(
-				`Payment no. ${
-					payment.index
-				} to ${payment.account.toString()} countersigning failed for an unknown reason.`,
-			);
+			executionGenerationErrors.push(`Payment no. ${payment.index} to ${payment.account.toString()} countersigning failed for an unknown reason.`);
 			return PaymentStage.Failed;
 		}
 		/**
@@ -934,16 +807,10 @@ export async function executeDistributionPlan(
 				// successful response code.
 				return PaymentStage.Finished;
 			}
-			const scheduledTxId =
-				payment.schedulingResult.receipt.scheduledTransactionId;
-			const { response, nodeHealth, error } = (payment.confirmationResult =
-				await client.executeQuery((nodeIds) =>
-					Promise.resolve(
-						new TryGetTransactionReceiptQuery()
-							.setTransactionId(scheduledTxId)
-							.setNodeAccountIds(nodeIds),
-					),
-				));
+			const scheduledTxId = payment.schedulingResult.receipt.scheduledTransactionId;
+			const { response, nodeHealth, error } = (payment.confirmationResult = await client.executeQuery((nodeIds) =>
+				Promise.resolve(new TryGetTransactionReceiptQuery().setTransactionId(scheduledTxId).setNodeAccountIds(nodeIds)),
+			));
 			if (nodeHealth === NodeHealth.Unhealthy) {
 				return PaymentStage.Unhealthy;
 			} else if (response) {
@@ -955,17 +822,13 @@ export async function executeDistributionPlan(
 						return PaymentStage.Finished;
 					}
 					executionGenerationErrors.push(
-						`Payment no. ${
-							payment.index
-						} to ${payment.account.toString()} confirmation request failed with code ${error.status.toString()}.`,
+						`Payment no. ${payment.index} to ${payment.account.toString()} confirmation request failed with code ${error.status.toString()}.`,
 					);
 					return PaymentStage.Failed;
 				}
 			}
 			executionGenerationErrors.push(
-				`Payment no. ${
-					payment.index
-				} to ${payment.account.toString()} confirmation request failed for an unknown reason.`,
+				`Payment no. ${payment.index} to ${payment.account.toString()} confirmation request failed for an unknown reason.`,
 			);
 			return PaymentStage.Failed;
 		}
@@ -980,9 +843,7 @@ export async function executeDistributionPlan(
 			summaryWorker.postMessage({ payment: castDistributionInfo(payment) });
 			function statusToDescription() {
 				if (payment.confirmationResult) {
-					const status =
-						payment.confirmationResult.response?.status ||
-						(payment.confirmationResult.error as StatusError)?.status;
+					const status = payment.confirmationResult.response?.status || (payment.confirmationResult.error as StatusError)?.status;
 					switch (status) {
 						case Status.Success:
 							return 'Status: Distribution Completed';
@@ -996,9 +857,7 @@ export async function executeDistributionPlan(
 					}
 				}
 				if (payment.countersigningResult) {
-					const status =
-						payment.countersigningResult.receipt?.status ||
-						(payment.countersigningResult.error as StatusError)?.status;
+					const status = payment.countersigningResult.receipt?.status || (payment.countersigningResult.error as StatusError)?.status;
 					switch (status) {
 						case Status.Success:
 							return `Countersigning: Accepted by Network`;
@@ -1010,17 +869,13 @@ export async function executeDistributionPlan(
 							return `Countersigning: Retrying Due to Tx Conflict`;
 						case undefined:
 						case null:
-							return `Countersigning Failed: ${categorizeErrorMessage(
-								payment.countersigningResult.error,
-							)}`;
+							return `Countersigning Failed: ${categorizeErrorMessage(payment.countersigningResult.error)}`;
 						default:
 							return `Countersigning Failed: ${status.toString()}`;
 					}
 				}
 				if (payment.schedulingResult) {
-					const status =
-						payment.schedulingResult.receipt?.status ||
-						(payment.schedulingResult.error as StatusError)?.status;
+					const status = payment.schedulingResult.receipt?.status || (payment.schedulingResult.error as StatusError)?.status;
 					switch (status) {
 						case Status.Success:
 							return `Scheduling: Awaiting Add'l Signatures`;
@@ -1030,9 +885,7 @@ export async function executeDistributionPlan(
 							return `Scheduling: Retrying Due to Tx Conflict`;
 						case undefined:
 						case null:
-							return `Scheduling Failed: ${categorizeErrorMessage(
-								payment.schedulingResult.error,
-							)}`;
+							return `Scheduling Failed: ${categorizeErrorMessage(payment.schedulingResult.error)}`;
 						default:
 							return `Scheduling Failed: ${status.toString()}`;
 					}
@@ -1078,10 +931,7 @@ export async function executeDistributionPlan(
 			for (const payment of nextRound) {
 				unknownCompletionStatus.push(payment);
 			}
-			paymentMonitor = setTimeout(
-				() => monitorPaymentsForCompletion(),
-				60000,
-			).unref();
+			paymentMonitor = setTimeout(() => monitorPaymentsForCompletion(), 60000).unref();
 		}
 		/**
 		 * Attempts to retrieve a receipt for a scheduled and potentially completed
@@ -1097,25 +947,13 @@ export async function executeDistributionPlan(
 		 * connections occurred `Unhealthy` should be returned and the calling
 		 * orchestrator will not re-use this client node for a period of time.
 		 */
-		async function checkPaymentForCompletion(
-			client: CalaxyClient,
-			payment: PaymentRecord,
-		): Promise<NodeHealth> {
-			const scheduledTxId =
-				payment.schedulingResult.receipt.scheduledTransactionId;
-			const { response, nodeHealth } = (payment.confirmationResult =
-				await client.executeQuery((nodeIds) =>
-					Promise.resolve(
-						new TryGetTransactionReceiptQuery()
-							.setTransactionId(scheduledTxId)
-							.setNodeAccountIds(nodeIds),
-					),
-				));
+		async function checkPaymentForCompletion(client: CalaxyClient, payment: PaymentRecord): Promise<NodeHealth> {
+			const scheduledTxId = payment.schedulingResult.receipt.scheduledTransactionId;
+			const { response, nodeHealth } = (payment.confirmationResult = await client.executeQuery((nodeIds) =>
+				Promise.resolve(new TryGetTransactionReceiptQuery().setTransactionId(scheduledTxId).setNodeAccountIds(nodeIds)),
+			));
 			if (response) {
-				payment.status =
-					response.status === Status.Success
-						? 'Status: Distribution Completed'
-						: `Status: ${response.status.toString()}`;
+				payment.status = response.status === Status.Success ? 'Status: Distribution Completed' : `Status: ${response.status.toString()}`;
 				summaryWorker.postMessage({ payment: castDistributionInfo(payment) });
 			} else {
 				nextRound.push(payment);
@@ -1165,17 +1003,19 @@ export function saveDistributionResultsFile(filePath: string): Promise<void> {
 			'Status Description',
 		]);
 		for (const payment of payments) {
+			const confirmationStatus = payment.confirmationResult.response?.status || (payment.confirmationResult.error as StatusError)?.status;
+			const countersignStatus = payment.countersigningResult?.receipt?.status || (payment.countersigningResult?.error as StatusError)?.status;
+			const schedulingStatus = payment.schedulingResult.receipt?.status || (payment.schedulingResult.error as StatusError)?.status;
 			stringifier.write([
 				payment.account.toString(),
 				payment.amountInTinyToken.shiftedBy(-tokenDecimals).toString(),
 				payment.schedulingResult?.receipt?.scheduleId?.toString() || 'n/a',
 				payment.schedulingResult?.transactionId?.toString() || 'n/a',
-				payment.schedulingResult?.receipt?.status?.toString() || 'n/a',
+				schedulingStatus?.toString() || 'n/a',
 				payment.countersigningResult?.transactionId?.toString() || 'n/a',
-				payment.countersigningResult?.receipt?.status?.toString() || 'n/a',
-				payment.schedulingResult?.receipt?.scheduledTransactionId?.toString() ||
-					'n/a',
-				payment.confirmationResult?.response?.status?.toString() || 'n/a',
+				countersignStatus?.toString() || 'n/a',
+				payment.schedulingResult?.receipt?.scheduledTransactionId?.toString() || 'n/a',
+				confirmationStatus?.toString() || 'n/a',
 				payment.status,
 			]);
 		}
@@ -1223,8 +1063,7 @@ function castDistributionInfo(info: PaymentRecord) {
 		amount: info.amountInTinyToken.shiftedBy(-tokenDecimals).toString(),
 		status: info.status,
 		schedulingTx: info.schedulingResult?.transactionId?.toString(),
-		scheduledTx:
-			info.schedulingResult?.receipt?.scheduledTransactionId?.toString(),
+		scheduledTx: info.schedulingResult?.receipt?.scheduledTransactionId?.toString(),
 		scheduleId: info.schedulingResult?.receipt?.scheduleId?.toString(),
 		paymentStatus: info.confirmationResult?.response?.status?.toString(),
 		inProgress: !!info.inProgress,
