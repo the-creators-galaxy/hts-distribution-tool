@@ -310,6 +310,16 @@ export function getTreasuryInformation(): Promise<TreasuryInfo> {
 	});
 }
 /**
+ * Internal helper function returning the currently selected
+ * network ID.  This is utilized by user interface components
+ * generating urls to the proper DLT explorers such as dragonglass.
+ *
+ * @returns the currently selected network ID
+ */
+export function getNetworkId(): NetworkId {
+	return networkId;
+}
+/**
  * Receives the treasury and crypto account information entered by the user.  Will not
  * throw an exception but will add any validation errors to the `tokenInfoErrors` array.
  *

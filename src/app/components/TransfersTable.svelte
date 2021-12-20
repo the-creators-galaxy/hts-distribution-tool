@@ -1,4 +1,7 @@
 <script lang="ts">
+import { invoke } from "../common/ipc";
+
+
   	export let transfers: { account:string, amount: string }[];
     export let decimals: number = 0;  
 
@@ -14,15 +17,33 @@
         };
     });    
 
+    // this is a little more complex than otherwise
+    // would usually create, we don't have to have 
+    // click handler registrations for each row in 
+    // the table, we wrap it up to one handler so the
+    // dom can render with less complication.
+    async function handleClick(evt) {
+        for(let element = evt.target; element; element = element.parentElement) {
+            const index = element.dataset.account;
+            if(index) {
+                evt.preventDefault();
+                const transfer = transfers[index-1];
+                if(transfer) {
+                    await invoke('open-address-explorer',transfer.account);
+                }
+            }
+        }
+    }
+
 </script>
-<div class="container">
+<div class="container" on:click={handleClick}>
     <div class="headers">
         <div>Account</div>
         <div>Amount</div>
     </div>
     <div class="data">
-        {#each data as { shard, realm, num, whole, fraction }}
-        <div class="account"><span class="shard">{shard}.</span><span class="realm">{realm}.</span><span class="num">{num}</span></div>
+        {#each data as { shard, realm, num, whole, fraction }, index}
+        <div class="account" data-account={index+1}><span class="shard">{shard}.</span><span class="realm">{realm}.</span><span class="num">{num}</span></div>
         <div class="amount"><span class="whole">{whole}</span><span class="fraction">.{fraction}</span></div>
         {/each}
     </div>
@@ -77,6 +98,15 @@
     {
         padding: 0.25rem 1.5rem;
         border-bottom: 1px solid var(--tcg-dark-gray2);
+    }
+    div.data > div.account
+    {
+        cursor: pointer;
+    }
+    div.data > div.account:hover
+    {
+        color: var(--tcg-green);
+        text-decoration: underline;
     }
     div.data > div.amount
     {

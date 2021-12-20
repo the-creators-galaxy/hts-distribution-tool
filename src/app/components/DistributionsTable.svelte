@@ -1,8 +1,40 @@
 <script lang="ts">
+    import { invoke } from "../common/ipc";
+
     export let payments: any[];
+
+    // this is a little more complex than otherwise
+    // would usually create, we don't have to have 
+    // click handler registrations for each row in 
+    // the table, we wrap it up to one handler so the
+    // dom can render with less complication.
+    async function handleClick(evt) {
+        for(let element = evt.target; element; element = element.parentElement) {
+            const cellType = element.dataset.celltype;
+            if(cellType) {
+                evt.preventDefault();
+                const index = element.parentElement.dataset.rowno;
+                if(index) {
+                    const payment = payments[index-1];
+                    if(payment) {
+                        if(cellType === 'address') {
+                            await invoke('open-address-explorer',payment.account);
+                        } else if(cellType === 'schedule') {
+                            await invoke('open-address-explorer',payment.scheduleId);
+                        } else if(cellType === 'scheduling-tx') {
+                            await invoke('open-transaction-explorer', payment.schedulingTx);
+                        } else if(cellType === 'scheduled-tx') {
+                            await invoke('open-scheduled-transaction-explorer', payment.scheduleId);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
 </script>
 
-<div class="container">
+<div class="container" on:click={handleClick}>
     <table>
         <tr>
             <th>No.</th>
@@ -13,15 +45,27 @@
             <th>Scheduling Transaction</th>
             <th>Distribution Transaction</th>
         </tr>
-        {#each payments as { index, account, amount, status, schedulingTx, scheduledTx, scheduleId }}
-        <tr>
+        {#each payments as { index, account, amount, status, schedulingTx, scheduledTx, scheduleId }, rowNo}
+        <tr data-rowno={rowNo+1}>
             <td>{index}</td>
-            <td>{account}</td>
+            <td data-celltype="address">{account}</td>
             <td>{amount}</td>
-            <td>{scheduleId || ''}</td>
+            {#if scheduleId}
+                <td data-celltype="schedule">{scheduleId}</td>
+            {:else}
+                <td></td>
+            {/if}
             <td>{status || ''}</td>
-            <td>{schedulingTx || ''}</td>
-            <td>{scheduledTx || ''}</td>
+            {#if schedulingTx}
+                <td data-celltype="scheduling-tx">{schedulingTx}</td>
+            {:else}
+                <td></td>
+            {/if}
+            {#if scheduledTx}
+                <td data-celltype="scheduled-tx">{scheduledTx}</td>
+            {:else}
+                <td></td>
+            {/if}
         </tr>
         {/each}
     </table>
@@ -82,5 +126,12 @@
     td + td
     {
         border-left: 1px solid var(--tcg-dark-gray2);
+    }
+    td[data-celltype] {
+        cursor: pointer;
+    }
+    td[data-celltype]:hover {
+        color: var(--tcg-green);
+        text-decoration: underline;
     }
 </style>
