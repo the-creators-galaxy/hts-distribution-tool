@@ -11,7 +11,14 @@ import {
 	setTreasuryInformation,
 } from './distribution';
 import { validatePrivateKey } from './keys';
-import { getAppVersion, queryUserForCsvFile, queryUserForOutputFile } from './ui';
+import {
+	getAppVersion,
+	openAddressExplorer,
+	openScheduledTransactionExplorer,
+	openTransactionExplorer,
+	queryUserForCsvFile,
+	queryUserForOutputFile,
+} from './ui';
 /**
  * The registry of supported/whitelisted methods executing in the
  * node process thread that can be invoked from the Electron User
@@ -30,6 +37,9 @@ const methods: { [key: string]: (...args: any[]) => Promise<any> } = {
 	'query-user-for-output-file': queryUserForOutputFile,
 	'save-results-output-file': saveDistributionResultsFile,
 	'get-app-version': getAppVersion,
+	'open-address-explorer': openAddressExplorer,
+	'open-transaction-explorer': openTransactionExplorer,
+	'open-scheduled-transaction-explorer': openScheduledTransactionExplorer,
 };
 /**
  * The single IPC entry point used by the Electron User Interface
