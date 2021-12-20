@@ -69,6 +69,57 @@ describe('CSV Processing Module', function () {
 				expect(data.errors).to.lengthOf(0);
 			});
 		});
+		describe('loads valid file of small amounts without error and', function () {
+			const filename = path.join(__dirname, 'csv.spec.resource-test-file-25-small-amounts.csv');
+			let data: CsvParseData;
+			before(async function () {
+				data = await loadAndParseCsvDistributionFile(filename);
+			});
+			it('returns a csv data structure', function () {
+				expect(data).to.exist;
+			});
+			it('includes the original full path to the file', function () {
+				expect(data.filename).to.equal(filename);
+			});
+			it('counts the number of rows in the file', function () {
+				expect(data.rows).to.equal(26);
+			});
+			it('counts the maximum number of columns in the file', function () {
+				expect(data.columns).to.equal(2);
+			});
+			it('counts the maximum decimal places in the file', function () {
+				expect(data.decimals).to.equal(7);
+			});
+			it('generates a transfer list', function () {
+				expect(data.transfers).to.lengthOf(25);
+				// Spot Check some of the transfers, but not all
+				expect(data.transfers.find((t) => t.account.toString() === '0.0.3107606'))
+					.to.have.property('amount')
+					.with.to.satisfy((a) => a.toString(10) === '0.0000001');
+				expect(data.transfers.find((t) => t.account.toString() === '0.0.3107612'))
+					.to.have.property('amount')
+					.with.to.satisfy((a) => a.toString(10) === '0.8879341');
+				expect(data.transfers.find((t) => t.account.toString() === '0.0.3107616'))
+					.to.have.property('amount')
+					.with.to.satisfy((a) => a.toString(10) === '0.4124992');
+				expect(data.transfers.find((t) => t.account.toString() === '0.0.3107603'))
+					.to.have.property('amount')
+					.with.to.satisfy((a) => a.toString(10) === '0.9999999');
+			});
+			it('orders transfer list by account id first', function () {
+				for (let i = 1; i < data.transfers.length; i++) {
+					const lhs = data.transfers[i - 1];
+					const rhs = data.transfers[i];
+					expect(lhs.account.num.lessThan(rhs.account.num)).to.be.true;
+				}
+			});
+			it('echos the original data', function () {
+				expect(data.data).to.lengthOf(26);
+			});
+			it('reports no errors in the error list', function () {
+				expect(data.errors).to.lengthOf(0);
+			});
+		});
 		describe('loads parsable file with errors and', function () {
 			const filename = path.join(__dirname, 'csv.spec.resource-test-file-25-with-errors.csv');
 			let data: CsvParseData;

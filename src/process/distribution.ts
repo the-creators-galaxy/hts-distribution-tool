@@ -281,7 +281,7 @@ export function getDistributionFileSummary(): Promise<CsvDataSummary> {
 		transfers: distributions.map((distribution) => {
 			return {
 				account: distribution.account.toString(),
-				amount: distribution.amount.toString(),
+				amount: distribution.amount.toString(10),
 			};
 		}),
 		data: csvRawData,
@@ -404,15 +404,15 @@ export async function generateDistributionPlan(progress: (any) => void): Promise
 	return {
 		errors: preGenerationErrors,
 		warnings: preGenerationWarnings,
-		treasuryBalance: tokenTreasuryBalance.shiftedBy(-tokenDecimals).toString(),
+		treasuryBalance: tokenTreasuryBalance.shiftedBy(-tokenDecimals).toString(10),
 		decimals: tokenDecimals,
-		totalTransfers: totalTransfers.shiftedBy(-tokenDecimals).toString(),
+		totalTransfers: totalTransfers.shiftedBy(-tokenDecimals).toString(10),
 		transfers: distributions
 			.filter((distribution) => !!distribution.amountInTinyToken)
 			.map((distribution) => {
 				return {
 					account: distribution.account.toString(),
-					amount: distribution.amountInTinyToken.shiftedBy(-tokenDecimals).toString(),
+					amount: distribution.amountInTinyToken.shiftedBy(-tokenDecimals).toString(10),
 				};
 			}),
 	};
@@ -458,7 +458,7 @@ export async function generateDistributionPlan(progress: (any) => void): Promise
 			preGenerationErrors.push(`Treasury Account ${tokenTreasuryId.toString()} does not hold the token ${tokenId.toString()}.`);
 			return false;
 		} else {
-			tokenTreasuryBalance = new BigNumber(treasuryTokenBalanceAsLong.toString());
+			tokenTreasuryBalance = new BigNumber(treasuryTokenBalanceAsLong.toString(10));
 			tokenDecimals = treasuryBalances.tokenDecimals.get(tokenId);
 		}
 		distributions
@@ -1018,7 +1018,7 @@ export function saveDistributionResultsFile(filePath: string): Promise<void> {
 			const schedulingStatus = payment.schedulingResult?.receipt?.status || (payment.schedulingResult?.error as StatusError)?.status;
 			stringifier.write([
 				payment.account.toString(),
-				payment.amountInTinyToken.shiftedBy(-tokenDecimals).toString(),
+				payment.amountInTinyToken.shiftedBy(-tokenDecimals).toString(10),
 				payment.schedulingResult?.receipt?.scheduleId?.toString() || 'n/a',
 				payment.schedulingResult?.transactionId?.toString() || 'n/a',
 				schedulingStatus?.toString() || 'n/a',
@@ -1070,7 +1070,7 @@ function castDistributionInfo(info: PaymentRecord) {
 	return {
 		index: info.index,
 		account: info.account.toString(),
-		amount: info.amountInTinyToken.shiftedBy(-tokenDecimals).toString(),
+		amount: info.amountInTinyToken.shiftedBy(-tokenDecimals).toString(10),
 		status: info.status,
 		schedulingTx: info.schedulingResult?.transactionId?.toString(),
 		scheduledTx: info.schedulingResult?.receipt?.scheduledTransactionId?.toString(),
