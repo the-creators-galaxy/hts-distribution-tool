@@ -856,7 +856,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 					const status = payment.confirmationResult.response?.status || (payment.confirmationResult.error as StatusError)?.status;
 					switch (status) {
 						case Status.Success:
-							return 'Status: Distribution Completed';
+							return 'Distribution Completed';
 						case undefined:
 						case null:
 						case Status.ReceiptNotFound:
@@ -963,7 +963,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 				Promise.resolve(new TryGetTransactionReceiptQuery().setTransactionId(scheduledTxId).setNodeAccountIds(nodeIds)),
 			));
 			if (response) {
-				payment.status = response.status === Status.Success ? 'Status: Distribution Completed' : `Status: ${response.status.toString()}`;
+				payment.status = response.status === Status.Success ? 'Distribution Completed' : `Status: ${response.status.toString()}`;
 				summaryWorker.postMessage({ payment: castDistributionInfo(payment) });
 			} else {
 				nextRound.push(payment);

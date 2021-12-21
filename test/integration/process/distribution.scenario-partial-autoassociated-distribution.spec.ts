@@ -196,7 +196,7 @@ describe('partial auto-associated distribution scenario', function () {
 					const payment = finalResult.payments[i];
 					expect(payment.index).to.equal(i);
 					expect(payment.account).to.equal(accountInfo.receipt.accountId.toString());
-					expect(payment.status).to.equal('Status: Distribution Completed');
+					expect(payment.status).to.equal('Distribution Completed');
 					expect(payment).has.property('schedulingTx');
 					expect(payment).has.property('scheduledTx');
 					expect(payment).has.property('scheduleId');
@@ -229,7 +229,7 @@ describe('partial auto-associated distribution scenario', function () {
 						expect(record[6]).to.equal('SUCCESS');
 						expect(record[7]).to.not.be.empty;
 						expect(record[8]).to.equal('SUCCESS');
-						expect(record[9]).to.equal(`Status: Distribution Completed`);
+						expect(record[9]).to.equal(`Distribution Completed`);
 					}
 					count = count + 1;
 				}
