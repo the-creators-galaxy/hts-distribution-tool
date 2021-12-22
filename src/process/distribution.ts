@@ -124,6 +124,37 @@ interface PaymentRecord extends Distribution {
 	 * attempting to send payment).
 	 */
 	confirmationResult?: QryResponse<TransactionReceipt>;
+	/**
+	 * The date & time the application started processing
+	 * this payment attempt.
+	 */
+	startedDateTime?: Date;
+	/**
+	 * The date & time the application scheduled the payment
+	 * request with the network (or received an error status
+	 * while making an attempt)
+	 */
+	scheduledDateTime?: Date;
+	/**
+	 * The date & time the application countersigned an
+	 * existing scheduled payment request on the network
+	 * (or received and error result status while
+	 * making the attempt)  This value may not exist on
+	 * a completed payment record if payment attempt resulted
+	 * in scheduling a new payment, in which case there is
+	 * no need to countersign.
+	 */
+	countersignedDateTime?: Date;
+	/**
+	 * The date & time the application completed processing
+	 * of this distribution payment.  The application may
+	 * query for the final disposition of the payment with
+	 * the network after this time has passed, but this value
+	 * represents the time at which the application stopped
+	 * submitting transactions to the network on behalf of
+	 * processing this payment request.
+	 */
+	finishedDateTime?: Date;
 }
 /**
  * The full path to the original distribution CSV file.
@@ -635,7 +666,11 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 	 * orchestrator will not re-use this client node for a period of time.
 	 */
 	async function processPayment(client: CalaxyClient, payment: PaymentRecord): Promise<NodeHealth> {
-		payment.inProgress = true;
+		// This could be a retry.
+		if (!payment.inProgress) {
+			payment.inProgress = true;
+			payment.startedDateTime = new Date();
+		}
 		let paymentStage = PaymentStage.Scheduling;
 		while (paymentStage !== PaymentStage.Finished) {
 			updatePaymentStatusDescription();
@@ -660,6 +695,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 			}
 		}
 		payment.inProgress = false;
+		payment.finishedDateTime = new Date();
 		updatePaymentStatusDescription();
 		return (
 			payment.confirmationResult?.nodeHealth || payment.countersigningResult?.nodeHealth || payment.schedulingResult?.nodeHealth || NodeHealth.Healthy
@@ -700,6 +736,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 				}
 				return transaction;
 			}));
+			payment.scheduledDateTime = new Date();
 			if (nodeHealth === NodeHealth.Unhealthy) {
 				return PaymentStage.Unhealthy;
 			} else if (receipt) {
@@ -766,6 +803,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 				}
 				return transaction;
 			}));
+			payment.countersignedDateTime = new Date();
 			if (nodeHealth === NodeHealth.Unhealthy) {
 				return PaymentStage.Unhealthy;
 			} else if (receipt) {
@@ -1011,6 +1049,10 @@ export function saveDistributionResultsFile(filePath: string): Promise<void> {
 			'Scheduled Payment Tx Id',
 			'Scheduled Payment Tx Status',
 			'Status Description',
+			'Started',
+			'Scheduled',
+			'Countersigned',
+			'Finished',
 		]);
 		for (const payment of payments) {
 			const confirmationStatus = payment.confirmationResult?.response?.status || (payment.confirmationResult?.error as StatusError)?.status;
@@ -1027,6 +1069,10 @@ export function saveDistributionResultsFile(filePath: string): Promise<void> {
 				payment.schedulingResult?.receipt?.scheduledTransactionId?.toString() || 'n/a',
 				confirmationStatus?.toString() || 'n/a',
 				payment.status,
+				payment.startedDateTime?.toISOString() || 'n/a',
+				payment.scheduledDateTime?.toISOString() || 'n/a',
+				payment.countersignedDateTime?.toISOString() || 'n/a',
+				payment.finishedDateTime?.toISOString() || 'n/a',
 			]);
 		}
 		stringifier.end();
