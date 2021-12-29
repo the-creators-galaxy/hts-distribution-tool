@@ -106,6 +106,10 @@ describe('fully associated distribution scenario', function () {
 						expect(record[7]).to.equal('Scheduled Payment Tx Id');
 						expect(record[8]).to.equal('Scheduled Payment Tx Status');
 						expect(record[9]).to.equal('Status Description');
+						expect(record[10]).to.equal('Started');
+						expect(record[11]).to.equal('Scheduled');
+						expect(record[12]).to.equal('Countersigned');
+						expect(record[13]).to.equal('Finished');
 					} else {
 						const payment = finalResult.payments[count - 1];
 						expect(record[0]).to.equal(payment.account);
@@ -118,6 +122,10 @@ describe('fully associated distribution scenario', function () {
 						expect(record[7]).to.not.be.empty;
 						expect(record[8]).to.equal('RECEIPT_NOT_FOUND');
 						expect(record[9]).to.equal(`Scheduling: Awaiting Add'l Signatures`);
+						expect(record[10]).to.not.be.empty;
+						expect(record[11]).to.not.be.empty;
+						expect(record[12]).to.equal('n/a');
+						expect(record[13]).to.not.be.empty;
 					}
 					count = count + 1;
 				}
@@ -204,6 +212,10 @@ describe('fully associated distribution scenario', function () {
 						expect(record[7]).to.equal('Scheduled Payment Tx Id');
 						expect(record[8]).to.equal('Scheduled Payment Tx Status');
 						expect(record[9]).to.equal('Status Description');
+						expect(record[10]).to.equal('Started');
+						expect(record[11]).to.equal('Scheduled');
+						expect(record[12]).to.equal('Countersigned');
+						expect(record[13]).to.equal('Finished');
 					} else {
 						const payment = finalResult.payments[count - 1];
 						expect(record[0]).to.equal(payment.account);
@@ -216,6 +228,10 @@ describe('fully associated distribution scenario', function () {
 						expect(record[7]).to.not.be.empty;
 						expect(record[8]).to.equal('SUCCESS');
 						expect(record[9]).to.equal(`Distribution Completed`);
+						expect(record[10]).to.not.be.empty;
+						expect(record[11]).to.not.be.empty;
+						expect(record[12]).to.not.be.empty;
+						expect(record[13]).to.not.be.empty;
 					}
 					count = count + 1;
 				}
@@ -309,6 +325,10 @@ describe('fully associated distribution scenario', function () {
 						expect(record[7]).to.equal('Scheduled Payment Tx Id');
 						expect(record[8]).to.equal('Scheduled Payment Tx Status');
 						expect(record[9]).to.equal('Status Description');
+						expect(record[10]).to.equal('Started');
+						expect(record[11]).to.equal('Scheduled');
+						expect(record[12]).to.equal('Countersigned');
+						expect(record[13]).to.equal('Finished');
 					} else {
 						const payment = finalResult.payments[count - 1];
 						expect(record[0]).to.equal(payment.account);
@@ -321,6 +341,10 @@ describe('fully associated distribution scenario', function () {
 						expect(record[7]).to.not.be.empty;
 						expect(record[8]).to.equal('RECEIPT_NOT_FOUND');
 						expect(record[9]).to.equal(`Scheduling: Awaiting Add'l Signatures`);
+						expect(record[10]).to.not.be.empty;
+						expect(record[11]).to.not.be.empty;
+						expect(record[12]).to.equal('n/a');
+						expect(record[13]).to.not.be.empty;
 					}
 					count = count + 1;
 				}
@@ -403,6 +427,10 @@ describe('fully associated distribution scenario', function () {
 						expect(record[7]).to.equal('Scheduled Payment Tx Id');
 						expect(record[8]).to.equal('Scheduled Payment Tx Status');
 						expect(record[9]).to.equal('Status Description');
+						expect(record[10]).to.equal('Started');
+						expect(record[11]).to.equal('Scheduled');
+						expect(record[12]).to.equal('Countersigned');
+						expect(record[13]).to.equal('Finished');
 					} else {
 						const payment = finalResult.payments[count - 1];
 						expect(record[0]).to.equal(payment.account);
@@ -415,6 +443,10 @@ describe('fully associated distribution scenario', function () {
 						expect(record[7]).to.not.be.empty;
 						expect(record[8]).to.equal('SUCCESS');
 						expect(record[9]).to.equal(`Distribution Completed`);
+						expect(record[10]).to.not.be.empty;
+						expect(record[11]).to.not.be.empty;
+						expect(record[12]).to.not.be.empty;
+						expect(record[13]).to.not.be.empty;
 					}
 					count = count + 1;
 				}

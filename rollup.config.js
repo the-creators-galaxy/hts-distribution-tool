@@ -65,7 +65,7 @@ export default [{
 		}),
 		production && terser()
 	],
-	external: ['electron', 'os', 'fs', 'csv-parse', 'csv-stringify', 'worker_threads', '@hashgraph/sdk', '@hashgraph/cryptography', '@hashgraph/proto', 'bignumber.js'],
+	external: ['electron', 'os', 'fs', 'csv-parse', 'csv-stringify', 'worker_threads', 'https', '@hashgraph/sdk', '@hashgraph/cryptography', '@hashgraph/proto', 'bignumber.js'],
 	watch: {
 		clearScreen: false
 	}
