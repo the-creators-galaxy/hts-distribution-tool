@@ -2,10 +2,11 @@
 	import { onMount } from 'svelte';
 	import { appVersion, page } from '../common/store';
 	import { invoke } from '../common/ipc';
+	import { Pages } from '../common/pages';
+	import ConfirmExitDialog from '../components/ConfirmExitDialog.svelte';
 	import DistributionsTable from '../components/DistributionsTable.svelte';
 	import ErrorsTable from '../components/ErrorsTable.svelte';
 	import PagingController from '../components/PagingController.svelte';
-	import { Pages } from '../common/pages';
 
 	let selectedTab = 0;
 	let results = null;
@@ -128,6 +129,9 @@
 	<section class="loading">
 		<div class="tcg-light-spinner">Loading Results&mldr;</div>
 	</section>
+	{/if}
+	{#if saving}
+		<ConfirmExitDialog message="This will interrupt the save in progress."/>
 	{/if}
 </main>
 

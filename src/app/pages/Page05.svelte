@@ -2,8 +2,9 @@
 	import { onMount } from 'svelte';
 	import { invoke } from '../common/ipc';
 	import { page, appVersion } from '../common/store';
-	import DistributionsTable from '../components/DistributionsTable.svelte';
 	import { Pages } from '../common/pages';
+	import ConfirmExitDialog from '../components/ConfirmExitDialog.svelte';
+	import DistributionsTable from '../components/DistributionsTable.svelte';
 
 	let data = null;
 	let showDetails = false;
@@ -60,6 +61,7 @@
 		</div>
 	</section>
 	{/if}
+	<ConfirmExitDialog />
 </main>
 
 <style>
