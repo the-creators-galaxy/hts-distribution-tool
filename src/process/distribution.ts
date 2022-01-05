@@ -10,6 +10,7 @@ import {
 	Status,
 	StatusError,
 	TokenId,
+	Transaction,
 	TransactionId,
 	TransactionReceipt,
 	TransferTransaction,
@@ -226,11 +227,29 @@ let submitPayerId: AccountId;
 let transferPayerId: AccountId;
 /**
  * A list of @hashgraph/sdk private key class, contains the list of
- * private keys used to for scheduling and countersigning distribution
- * payment transactions.  Must include the necessary key(s) to satisfy
- * the `submitPayerId` crypto account at a minimum.
+ * private keys associated with the treasury for authorizing the transfer
+ * of tokens from the treasury to other cypto accounts.  If this plan
+ * instance is intended to only 'schedule' the transfer transactions,
+ * this list can be empty.
  */
-let signatories: PrivateKey[];
+let treasuryKeys: PrivateKey[];
+/**
+ * A list of @hashgraph/sdk private key class, contains the list of
+ * private keys associated with the account paying the network fees
+ * for scheduling the transfer transaction and/or paying the fees to
+ * coutersign an existing scheduled transaction.  The submit payer
+ * can be the same account as the tranfer payer, but it is not
+ * required to be so.
+ */
+let submitPayerKeys: PrivateKey[];
+/**
+ * A list of @hashgraph/sdk private key class, contains the list of
+ * private keys associated with the account that pays the network fees
+ * charged for the transaction transfering tokens from the treasury.
+ * The transfer payer can be the same account as the treasury or the
+ * submit payer, but it does not need to be.
+ */
+let transferPayerKeys: PrivateKey[];
 /**
  * A list of errors produced while performing a preliminary check on
  * token and crypto account information entered by the user.
@@ -332,12 +351,9 @@ export function getTreasuryInformation(): Promise<TreasuryInfo> {
 		submitPayer: submitPayerId?.toString(),
 		transferPayer: transferPayerId?.toString(),
 		tokenTreasury: tokenTreasuryId?.toString(),
-		signatories: (signatories || []).map((pKey) => {
-			return {
-				privateKey: '302e020100300506032b657004220420' + Buffer.from(pKey.toBytes()).toString('hex'),
-				publicKey: '302a300506032b6570032100' + Buffer.from(pKey.publicKey.toBytes()).toString('hex'),
-			};
-		}),
+		submitPayerSignatories: privateKeysToSignatories(submitPayerKeys),
+		transferPayerSignatories: privateKeysToSignatories(transferPayerKeys),
+		treasurySignatories: privateKeysToSignatories(treasuryKeys),
 	});
 }
 /**
@@ -366,7 +382,12 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 	submitPayerId = tryParseAccountId(info.submitPayer, 'Submit Payer ID');
 	transferPayerId = tryParseAccountId(info.transferPayer, 'Transfer Payer ID');
 	tokenTreasuryId = tryParseAccountId(info.tokenTreasury, 'Token Treasury ID');
-	signatories = tryParsePrivateKeys(info.signatories);
+	treasuryKeys = tryParsePrivateKeys(info.treasurySignatories, 'Treasury Private Key');
+	submitPayerKeys = tryParsePrivateKeys(info.submitPayerSignatories, 'Scheduling Payer Private Key');
+	transferPayerKeys = tryParsePrivateKeys(info.transferPayerSignatories, 'Transfer Payer Private Key');
+	if(submitPayerKeys.length === 0) {
+		tokenInfoErrors.push('Must have at least one Scheduling Payer Key.');
+	}
 	return Promise.resolve();
 
 	function tryParseAccountId(value: string, description: string) {
@@ -387,13 +408,13 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 		}
 	}
 
-	function tryParsePrivateKeys(values: Signatory[]) {
+	function tryParsePrivateKeys(values: Signatory[], description: string) {
 		let result = [];
 		for (var signatory of values) {
 			try {
 				result.push(PrivateKey.fromString(signatory.privateKey));
 			} catch (err) {
-				tokenInfoErrors.push(`Invalid Private Key: ${err.message || err.toString()}`);
+				tokenInfoErrors.push(`Invalid ${description}: ${err.message || err.toString()}`);
 				return null;
 			}
 		}
@@ -477,7 +498,7 @@ export async function generateDistributionPlan(progress: (any) => void): Promise
 	async function confirmAccountsExist(): Promise<boolean> {
 		let checkedBalanceCount = 0;
 		progress(`Verifying treasury and paying accounts ...`);
-		const subitBalances = await getSourceAccountBalances(submitPayerId, 'Submit Payer Account');
+		const subitBalances = await getSourceAccountBalances(submitPayerId, 'Scheduling Payer Account');
 		const transferBalances = await getSourceAccountBalances(transferPayerId, 'Transfer Payer Account');
 		const treasuryBalances = await getSourceAccountBalances(tokenTreasuryId, 'Treasury Account');
 		if (!subitBalances || !transferBalances || !treasuryBalances) {
@@ -731,9 +752,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 					.setTransactionId(TransactionId.generate(submitPayerId))
 					.setNodeAccountIds(nodeIds)
 					.freeze();
-				for (const signatory of signatories) {
-					await transaction.sign(signatory);
-				}
+				await signTransactionWithAllKeys(transaction);
 				return transaction;
 			}));
 			payment.scheduledDateTime = new Date();
@@ -798,9 +817,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 					.setTransactionId(TransactionId.generate(submitPayerId))
 					.setNodeAccountIds(nodeIds)
 					.freeze();
-				for (const signatory of signatories) {
-					await transaction.sign(signatory);
-				}
+				await signTransactionWithAllKeys(transaction);
 				return transaction;
 			}));
 			payment.countersignedDateTime = new Date();
@@ -1096,7 +1113,9 @@ export function resetDistribution(): void {
 	tokenTreasuryId = undefined;
 	submitPayerId = undefined;
 	transferPayerId = undefined;
-	signatories = undefined;
+	treasuryKeys = undefined;
+	submitPayerKeys = undefined;
+	transferPayerKeys = undefined;
 	tokenInfoErrors = undefined;
 	preGenerationErrors = undefined;
 	preGenerationWarnings = undefined;
@@ -1145,4 +1164,43 @@ async function getReachableClientList(): Promise<CalaxyClient[]> {
 		clients = await CalaxyClient.filterByPing(candidates, i * 250);
 	}
 	return clients;
+}
+/**
+ * Converts an array of Hedera PrivateKey objects to corresponding
+ * Signatory structures that can be marshaled over the IPC to the
+ * user interface thread.
+ *
+ * @param privateKeys array of private keys to convert.
+ * @returns array of Signatory objects representing text versions of the key.
+ */
+function privateKeysToSignatories(privateKeys: PrivateKey[]): Signatory[] {
+	return (privateKeys || []).map((pKey) => {
+		return {
+			privateKey: '302e020100300506032b657004220420' + Buffer.from(pKey.toBytes()).toString('hex'),
+			publicKey: '302a300506032b6570032100' + Buffer.from(pKey.publicKey.toBytes()).toString('hex'),
+		};
+	});
+}
+/**
+ * Helper function that signs a given transaction with all 
+ * private keys available.
+ * 
+ * @param transaction transaction to sign.
+ */
+async function signTransactionWithAllKeys(transaction: Transaction): Promise<void> {
+	if (submitPayerKeys) {
+		for (const signatory of submitPayerKeys) {
+			await transaction.sign(signatory);
+		}
+	}
+	if (transferPayerKeys) {
+		for (const signatory of transferPayerKeys) {
+			await transaction.sign(signatory);
+		}
+	}
+	if (treasuryKeys) {
+		for (const signatory of treasuryKeys) {
+			await transaction.sign(signatory);
+		}
+	}
 }
