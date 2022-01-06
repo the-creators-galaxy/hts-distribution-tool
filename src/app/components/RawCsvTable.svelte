@@ -31,14 +31,14 @@
         border-collapse: collapse;
         overflow: auto;
         border-radius: 0.75rem;
-        border: 1px solid var(--tcg-dark-gray2);
-        background-color: var(--tcg-transparent-black);
+        border: 1px solid var(--cds-nd-700);
+        background-color: var(--cds-nd-0-40);
         user-select: text;
     }
    	td {
         margin: 0;
         padding: 0.2rem 1rem;
-        border: 1px solid var(--tcg-dark-gray2);
+        border: 1px solid var(--cds-nd-700);
 	}
     td.rowno {
         font-size: 0.8rem;

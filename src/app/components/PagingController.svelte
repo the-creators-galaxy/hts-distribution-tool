@@ -38,7 +38,7 @@
         column-gap: 1rem;
         vertical-align: middle;
         font-size: 0.875rem;
-        color: var(--tcg-white);
+        color: var(--cds-nl-0);
         margin-left: auto;
     }
 </style>

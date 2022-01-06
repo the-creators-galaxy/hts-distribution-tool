@@ -1,24 +1,31 @@
 :root {
-	--tcg-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
-	--tcg-light-green: rgb(144,248,195);
-	--tcg-green: #17E9BF;
-	--tcg-dark-green: #10C8B5;
-	--tcg-darker-green: rgb(39,88,84);
-	--tcg-yellow: #FF9A24;
-	--tcg-light-red: rgb(240,80,121);
-	--tcg-red: #F05079;
-	--tcg-purple-red: #E21860;
-	--tcg-dark-red: rgb(80,48,66);
-	--tcg-white: #FFFFFF;
-	--tcg-lighter-gray: #B0BDCA;
-	--tgc-light-gray: #C8D0D8;
-	--tcg-medium-gray: #364454;
-	--tcg-dark-gray: #283443;
-	--tcg-dark-gray2: #1B2530;
-	--tcg-darker-gray: #111820;
-	--tcg-black: #0A0E13;
-	--tcg-transparent-dark-gray: #F5F6F726;
-	--tcg-transparent-black: #00000066;
+	--cds-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+
+	--cds-cs-200: #a1fcd0;
+	--cds-cs-500: #17e9bf;
+	--cds-cs-600: #10c8b5;
+	--cds-cs-900: #045c6f;
+
+	--cds-ct-400: #F05079;
+	--cds-ct-500: #E21860;
+	--cds-ct-900: #6e0454;
+
+	--cds-nl-0: #FFFFFF;
+	--cds-nl-500: #C8D0D8;
+	--cds-nl-700: #B0BDCA;
+
+	--cds-nd-500: #364454;
+	--cds-nd-600: #283443;
+	--cds-nd-700: #1B2530;
+	--cds-nd-800: #111820;
+	--cds-nd-900: #0A0E13;
+
+	--cds-nl-300-20: rgba(222, 227, 231, 0.2);
+	
+	--cds-nd-0-40: rgba(0, 0, 0, 0.4);
+
+	--cds-ui-w-500: #fe8f0c;
+
 }
 
 @keyframes spinner-animation {
@@ -36,8 +43,8 @@ html, body {
 }
 
 body {	
-	color: var(--tgc-light-gray);
-	background-color: var(--tcg-black);
+	color: var(--cds-nl-500);
+	background-color: var(--cds-nd-900);
 	background-image: url('background.svg');
 	background-repeat: no-repeat;
 	background-size: contain;
@@ -45,12 +52,12 @@ body {
 	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
-	font-family: var(--tcg-font-family);
+	font-family: var(--cds-font-family);
 	user-select: none;
 }
 
 h1 {
-	color: var(--tcg-white);
+	color: var(--cds-nl-0);
 	font-style: normal;
 	font-weight: 600;
 	font-size: 1.75;
@@ -75,7 +82,7 @@ label
 {
 	margin: 1rem 0 0.5rem 0;
 	padding: 0;
-	color: var(--tcg-white);
+	color: var(--cds-nl-0);
 	font-size: 1rem;
 	line-height: 1.5rem;
 	font-weight: 600;
@@ -84,15 +91,15 @@ label
 input, select, .read-only-input
 {
 	margin: 0;
-	color: var(--tcg-white);
-	background: var(--tcg-transparent-dark-gray);
+	color: var(--cds-nl-0);
+	background: var(--cds-nl-300-20);
 	border-radius: 0.5rem;
 	padding: 0 1rem;
 	height: 2.75rem;
 	font-size: 0.75rem;
 	line-height: 1.5rem;
 	border: none;	
-	font-family: var(--tcg-font-family);
+	font-family: var(--cds-font-family);
 }
 
 .read-only-input {
@@ -111,8 +118,8 @@ input[type=checkbox]
 	border: none;
 	border-radius: 0.15em;
 	padding: 0;
-	color: var(--tcg-white);
-	background-color: var(--tcg-medium-gray);
+	color: var(--cds-nl-0);
+	background-color: var(  --cds-nd-500);
 	vertical-align: middle;
 	display: grid;
 	place-content: center;	
@@ -124,7 +131,7 @@ input[type="checkbox"]::before {
 	height: 0.65em;
 	transform: scale(0);
 	transition: 120ms transform ease-in-out;
-	box-shadow: inset 1em 1em var(--tcg-green);
+	box-shadow: inset 1em 1em var(--cds-cs-500);
 }
 
 input[type="checkbox"]:checked::before {
@@ -150,7 +157,7 @@ input:focus, select:focus
 {
 	outline-offset: -1px;
 	outline-style: solid;
-	outline-color: var(--tcg-green);
+	outline-color: var(--cds-cs-500);
 }
 
 select>option
@@ -158,12 +165,12 @@ select>option
 	margin: 0;
 	padding: 0;
 	font-size: 1rem;
-	background: var(--tcg-dark-gray);
+	background: var(--cds-nd-600);
 }
 
 input::placeholder
 {
-	color: var(--tcg-lighter-gray);
+	color: var(--cds-nl-700);
 }
 
 main {
@@ -200,8 +207,8 @@ footer {
 	align-items: center;
 	column-gap: 1rem;
 	row-gap: 0.25rem;
-	background-color: var(--tcg-darker-gray);
-	border-top: 1px solid var(--tcg-dark-gray);
+	background-color: var(--cds-nd-800);
+	border-top: 1px solid var(--cds-nd-600);
 	margin: 0;
 	padding: 1rem 2rem 1rem 0.75rem;
 }
@@ -210,7 +217,7 @@ dialog {
 	overflow-x: hidden;
 	overflow-y: auto;
 	border-radius: 1rem;
-	background-color: var(--tcg-dark-gray2);
+	background-color: var(--cds-nd-700);
 	border: none;
 	padding: 0;
 }
@@ -227,37 +234,37 @@ button {
 	min-height: 2.25rem;
 	border-radius: 0.375rem;
 	border: none;
-	color: var(--tcg-white);
+	color: var(--cds-nl-0);
 	background: none;
 	transition: background-color 0.2s ease-in-out;
 }
 
 button:hover {
-	background-color: var(--tcg-black);	
+	background-color: var(--cds-nd-900);	
 }
 
 button:focus {
 	outline: none;
-	box-shadow: 0 0 0 3px var(--tcg-dark-gray), inset 0 0 0 1px var(--tgc-light-gray);
+	box-shadow: 0 0 0 3px var(--cds-nd-600), inset 0 0 0 1px var(--cds-nl-500);
 	border-radius: 0.5rem;
 }
 
 button:disabled {
 	color: var(--tcg-light-gray);
-	background-color: var(--tcg-medium-gray);
+	background-color: var(  --cds-nd-500);
 }
 
 button.action {
-	color: var(--tcg-dark-gray);
-	background-color: var(--tcg-green);
+	color: var(--cds-nd-600);
+	background-color: var(--cds-cs-500);
 }
 
 button.action:hover {
-	background-color: var(--tcg-dark-green);
+	background-color: var(--cds-cs-600);
 }
 
 button.action:focus {
-	box-shadow: 0 0 0 3px var(--tcg-darker-green), inset 0 0 0 1px var(--tcg-light-green);
+	box-shadow: 0 0 0 3px var(--cds-cs-900), inset 0 0 0 1px var(--cds-cs-200);
 }
 
 button.reveal {
@@ -266,7 +273,7 @@ button.reveal {
 	font-weight: 600;
 	margin: 0;
 	padding: 0;
-	color: var(--tcg-green);
+	color: var(--cds-cs-500);
 }
 
 button.reveal::after {
@@ -289,7 +296,7 @@ button.hide {
 	font-weight: 600;
 	margin: 0;
 	padding: 0;
-	color: var(--tcg-green);
+	color: var(--cds-cs-500);
 }
 
 button.hide::after {
@@ -312,8 +319,8 @@ button.right-arrow {
 	height: 2.25rem;
 	border: none;
 	border-radius: 0.375rem;
-	background-color: var(--tcg-white);
-	color: var(--tcg-black);
+	background-color: var(--cds-nl-0);
+	color: var(--cds-nd-900);
 	background-image: url(arrow-right-dark.svg);
 	background-repeat: no-repeat;
 	background-size: 1.5rem;
@@ -324,7 +331,7 @@ button.right-arrow {
 
 button.right-arrow:disabled {	
 	background-image: url(arrow-right-gray.svg);
-	background-color: var(--tcg-medium-gray);
+	background-color: var(  --cds-nd-500);
 }
 
 button.left-arrow {
@@ -332,8 +339,8 @@ button.left-arrow {
 	height: 2.25rem;
 	border: none;
 	border-radius: 0.375rem;
-	background-color: var(--tcg-white);
-	color: var(--tcg-black);
+	background-color: var(--cds-nl-0);
+	color: var(--cds-nd-900);
 	background-image: url(arrow-left-dark.svg);
 	background-repeat: no-repeat;
 	background-size: 1.5rem;
@@ -344,7 +351,7 @@ button.left-arrow {
 
 button.left-arrow:disabled {
 	background-image: url(arrow-left-gray.svg);
-	background-color: var(--tcg-medium-gray);
+	background-color: var(  --cds-nd-500);
 }
 
 button.remove-item {
@@ -352,8 +359,8 @@ button.remove-item {
 	height: 2.75rem;
 	border: none;
 	border-radius: 0.375rem;
-	background-color: var(--tcg-purple-red);
-	color: var(--tcg-white);
+	background-color: var(--cds-ct-500);
+	color: var(--cds-nl-0);
 	background-image: url(minus-light.svg);
 	background-repeat: no-repeat;
 	background-size: 1.5rem;
@@ -363,11 +370,11 @@ button.remove-item {
 }
 
 button.remove-item:hover {
-	background-color: var(--tcg-red);
+	background-color: var(--cds-ct-400);
 }
 
 button.remove-item:focus {
-	box-shadow: inset 0 0 0 3px var(--tcg-dark-red), inset 0 0 0 4px var(--tcg-light-red);
+	box-shadow: inset 0 0 0 3px var(--cds-ct-900), inset 0 0 0 4px var(--cds-ct-400);
 }
 
 button.add-item {
@@ -375,8 +382,8 @@ button.add-item {
 	height: 2.75rem;
 	border: none;
 	border-radius: 0.375rem;
-	background-color: var(--tcg-green);
-	color: var(--tcg-dark-gray);
+	background-color: var(--cds-cs-500);
+	color: var(--cds-nd-600);
 	background-image: url(plus-dark.svg);
 	background-repeat: no-repeat;
 	background-size: 1.5rem;
@@ -400,11 +407,11 @@ button.close-dialog {
 }
 
 button.close-dialog:hover {
-	background-color: var(--tcg-red);
+	background-color: var(--cds-ct-400);
 }
 
 button.close-dialog:focus {
-	box-shadow: inset 0 0 0 3px var(--tcg-dark-red), inset 0 0 0 4px var(--tcg-light-red);
+	box-shadow: inset 0 0 0 3px var(--cds-ct-900), inset 0 0 0 4px var(--cds-ct-400);
 }
 
 footer > button {
@@ -426,7 +433,7 @@ footer > button {
 	align-content: end;
 	line-height: 0.1rem;
 	font-size: 0.6rem;
-	color: var(--tcg-white);
+	color: var(--cds-nl-0);
 }
 
 .tcg-dark-spinner::after {
@@ -513,8 +520,8 @@ footer > button {
 	margin: 0;
 	padding: 0.46875rem 1.25rem;
 	border-radius: 0;
-	color: var(--tcg-white);
-	background-color: var(--tcg-dark-gray);
+	color: var(--cds-nl-0);
+	background-color: var(--cds-nd-600);
 }
 
 .tcg-tab-strip > button:first-child {
@@ -526,8 +533,8 @@ footer > button {
 }
 
 .tcg-tab-strip > button.selected {
-	color: var(--tcg-dark-gray);
-	background-color: var(--tcg-green);	
+	color: var(--cds-nd-600);
+	background-color: var(--cds-cs-500);	
 }
 
 div.tab-page {
@@ -538,8 +545,8 @@ div.tab-page {
 
 .tcg-success-notice
 {
-	color: var(--tcg-white);
-	background-color: var(--tcg-dark-gray2);
+	color: var(--cds-nl-0);
+	background-color: var(--cds-nd-700);
 	border-radius: 0.75rem;
 	padding: 1.125rem 2rem 1.125rem 3.6rem;
 	font-size: 0.875rem;
@@ -552,8 +559,8 @@ div.tab-page {
 
 .tcg-error-notice 
 {
-	color: var(--tcg-white);
-	background-color: var(--tcg-dark-gray2);
+	color: var(--cds-nl-0);
+	background-color: var(--cds-nd-700);
 	border-radius: 0.75rem;
 	padding: 1.125rem 2rem 1.125rem 3.6rem;
 	font-size: 0.875rem;
@@ -576,5 +583,5 @@ div.tab-page {
 }
 
 .tcg-stat-group>div>span {
-	color: var(--tcg-white);
+	color: var(--cds-nl-0);
 }

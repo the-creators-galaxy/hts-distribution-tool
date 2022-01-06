@@ -75,7 +75,7 @@
 	}
 	div.info {
 		border-radius: 0.75rem;
-		background-color: var(--tcg-dark-gray2);
+		background-color: var(--cds-nd-700);
 		padding: 1.125rem 1.5rem;
 		margin: 1.25rem 0 1.5rem 0;
 	}
@@ -94,7 +94,7 @@
 	div.details {
 		font-size: 0.875rem;
 		line-height: 1.2rem;
-		border-top: 1px solid var(--tcg-dark-gray);
+		border-top: 1px solid var(--cds-nd-600);
 		margin-top: 1.125rem;
 		padding-top: 1.125rem;
 		grid-column: 1 / 3;
@@ -102,6 +102,6 @@
 	span.count {
 		min-width: 6rem;
 		text-align: right;
-		color: var(--tcg-white);
+		color: var(--cds-nl-0);
 	}
 </style>

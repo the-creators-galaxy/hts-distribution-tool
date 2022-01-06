@@ -115,6 +115,6 @@
 		font-size: 0.875rem;
 	}
 	.selected.errors {
-		background-color: var(--tcg-red);
+		background-color: var(--cds-ct-400);
 	}
 </style>

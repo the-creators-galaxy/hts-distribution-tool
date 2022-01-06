@@ -4,10 +4,10 @@
 	import { invoke } from '../common/ipc';
 	import type { TreasuryInfo } from '../../common/primitives';
 	import { Pages } from '../common/pages';
+	import SignatoriesList from '../components/SignatoriesList.svelte';
 
 	const digits = /^\d+$/;
 	let treasuryInfo: TreasuryInfo;
-	let privateKey: string;
 
 	$: canContinue = treasuryInfo &&
 			treasuryInfo.networkId &&
@@ -15,36 +15,13 @@
 			isValidAddress(treasuryInfo.submitPayer) &&
 			isValidAddress(treasuryInfo.transferPayer) &&
 			isValidAddress(treasuryInfo.tokenTreasury) &&
-			!(privateKey?.length > 0) &&
-			treasuryInfo.signatories.length > 0 ?
+			treasuryInfo.submitPayerSignatories.length > 0 ?
 				true : false;	
 
 	onMount(async () => {
 		treasuryInfo = await invoke('get-treasury-information');
 	});	
 
-	async function clickAddPrivateKey() {
-		if(privateKey) {
-			try
-			{
-            	const key = await invoke('validate-private-key', privateKey);
-				if(key && !treasuryInfo.signatories.find(k => k.publicKey === key.publicKey)) {
-					treasuryInfo.signatories.push(key);
-					treasuryInfo.signatories = treasuryInfo.signatories;
-					privateKey = '';					
-				}
-			}
-			catch
-			{
-				// Key management will change so this portion
-				// is not implemented at this time.
-			}
-		}
-	}
-	function clickRemovePrivateKey(index) {
-		treasuryInfo.signatories.splice(index,1);
-		treasuryInfo.signatories = treasuryInfo.signatories;
-	}
 	function clickGoBack() {
 		$page = Pages.page02;
 	}
@@ -76,35 +53,36 @@
 	{#if (treasuryInfo)}
 	<section>
 		<fieldset>
+			<h2>General details</h2>
 			<label for="networkId">Network</label>
 			<select bind:value={treasuryInfo.networkId} name="networkId">
 				<option value="{1}">Main</option>
 				<option value="{2}">Test</option>
 			</select>
 			<label for="token">Token ID</label>
-			<input type="text" bind:value={treasuryInfo.token} name="token" placeholder="Enter token ID&mldr;"/>
-			<label for="tokenTreasury">Token Treasury</label>
-			<input type="text" bind:value={treasuryInfo.tokenTreasury} name="tokenTreasury" placeholder="Enter token treasury&mldr;"/>
+			<input type="text" bind:value={treasuryInfo.token} name="token" placeholder="Enter token id&mldr;"/>
 		</fieldset>
 		<fieldset>
-			<label for="submitPayer">Scheduling Payer</label>
-			<input type="text" bind:value={treasuryInfo.submitPayer} name="submitPayer" placeholder="Enter scheduling payer&mldr;"/>
-			<label for="transferPayer">Distribution Payer</label>
-			<input type="text" bind:value={treasuryInfo.transferPayer} name="transferPayer" placeholder="Enter distribution payer&mldr;"/>
+			<h2>Treasury</h2>
+			<label for="tokenTreasury">Account ID</label>
+			<input type="text" bind:value={treasuryInfo.tokenTreasury} name="tokenTreasury" placeholder="Enter token treasury account id&mldr;"/>
+			<label for="treasurySignatories">Private keys(s) (Optional)</label>
+			<SignatoriesList bind:signatories={treasuryInfo.treasurySignatories}></SignatoriesList>
 		</fieldset>
-		<div class="keylist">
-			<div class="label">Signing Keys</div>
-			<label for="privateKey">Add private keys</label>
-			<p>Please enter an ED25519 private key value in hex</p>
-			<div class="list">
-				{#each treasuryInfo.signatories as {publicKey}, index}
-					<div class="read-only-input">{publicKey}</div>
-					<button on:click={() => clickRemovePrivateKey(index)} class="remove-item"></button>
-				{/each}
-				<input type="text" bind:value={privateKey} name="privateKey" placeholder="Enter private key value&mldr;"/>
-				<button on:click={clickAddPrivateKey} class="add-item"></button>
-			</div>
-		</div>
+		<fieldset>
+			<h2>Scheduling Payer</h2>
+			<label for="submitPayer">Account ID</label>
+			<input type="text" bind:value={treasuryInfo.submitPayer} name="submitPayer" placeholder="Enter scheduling payer account id&mldr;"/>
+			<label for="submitPayerSignatories">Private keys(s)</label>
+			<SignatoriesList bind:signatories={treasuryInfo.submitPayerSignatories}></SignatoriesList>
+		</fieldset>
+		<fieldset>
+			<h2>Distribution Payer</h2>
+			<label for="transferPayer">Account ID</label>
+			<input type="text" bind:value={treasuryInfo.transferPayer} name="transferPayer" placeholder="Enter distribution payer account id&mldr;"/>
+			<label for="transferPayerSignatories">Private keys(s) (Optional)</label>
+			<SignatoriesList bind:signatories={treasuryInfo.transferPayerSignatories}></SignatoriesList>
+		</fieldset>
 	</section>
 	{:else}
 	<section class="loading"><div class="tcg-light-spinner">Loading&mldr;</div></section>
@@ -119,13 +97,11 @@
 
 <style>
 	section {
-		grid-template-columns: 1fr 1fr;
-		grid-template-rows: max-content 1fr ;
-		column-gap: 3rem;
+		display: block;
 		overflow-x: hidden;
 		overflow-y: auto;
 		/* To push the scroll bar to the edge of the viewport */
-		padding: 0 3rem;
+		padding: 0 3rem 1.25rem 3rem;
 		margin: 0;
 	}
 	section.loading {
@@ -136,49 +112,21 @@
 	}
 	fieldset
 	{
+		background-color: var(--cds-nd-700);
 		display: grid;
 		grid-template-columns: 1fr;
 		align-content: start;
+		padding: 1rem 1rem 1.5rem 1rem;
+		margin-bottom: 1.5rem;
+		border-radius: 0.5rem;
 	}
-	div.keylist
-	{
-		display: grid;
-		grid-template-columns: 1fr;
-		align-content: start;
-		grid-column: 1 / 3;
-		margin: 2rem 0 1rem 0;
-	}
-	div.keylist > div.label
-	{
-		color: var(--tcg-white);
-		font-size: 1.125rem;
-		font-weight: 600;
+	h2 {
+		margin: 0;
 		padding: 0 0 0.5rem 0;
-		border-bottom: 1px solid var(--tcg-medium-gray);
+		color: var(--cds-nl-0);
+		font-size: 1.2rem;
+		line-height: 1.5rem;
+		font-weight: 600;
+		border-bottom: 1px solid var(  --cds-nd-500);		
 	}
-	div.keylist > div.list
-	{
-		display: grid;
-		grid-template-columns: 1fr max-content;
-		column-gap: 1rem;
-		row-gap: 1.25rem;
-	}
-	div.keylist > label
-	{
-		line-height: 1rem;
-		margin: 16px 0 0 0;
-	}
-	div.keylist > p
-	{
-		font-size: 0.875rem;
-		line-height: 0.875rem;
-		margin: 12px 0;
-		padding: 0;
-	}
-	@media only screen and (max-width: 580px) {
-		section {
-			display: block;
-			overflow: auto;
-		}
-    }	
 </style>
