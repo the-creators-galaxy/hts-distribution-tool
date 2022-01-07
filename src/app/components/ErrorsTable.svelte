@@ -20,8 +20,8 @@
         overflow: hidden;
         display: grid;
         grid-template-rows: max-content 1fr;
-        border: 1px solid var(--tcg-dark-gray2);
-        background-color: var(--tcg-transparent-black);
+        border: 1px solid var(--cds-nd-700);
+        background-color: var(--cds-nd-0-40);
         border-radius: 0.75rem;  
         align-self:start;
         max-height: 100%;
@@ -36,7 +36,7 @@
         margin: 0;
         padding: 0.75rem 1.5rem 1.5rem 3rem;
         user-select: text;
-        border-top: 1px solid var(--tcg-dark-gray2);
+        border-top: 1px solid var(--cds-nd-700);
         font-size: 0.875rem;
     }
     li {
@@ -46,7 +46,7 @@
     }
     div.container > div
     {        
-        color: var(--tcg-red);
+        color: var(--cds-ct-400);
         font-size: 1rem;
         margin: 0 0 1.375rem 0;
         margin: 0;

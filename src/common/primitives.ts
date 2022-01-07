@@ -112,6 +112,14 @@ export interface TreasuryInfo {
 	 */
 	submitPayer: string;
 	/**
+	 * Contains the list of Hex encoded private keys typically related
+	 * to the account paying the network fees for scheduling the transfer
+	 * transaction and/or paying the fees to coutersign an existing scheduled
+	 * transaction.  The submit payer can be the same account as the tranfer
+	 * payer, but it is not required to be so.
+	 */
+	submitPayerSignatories: Signatory[];
+	/**
 	 * The address of the crypto account identified as the payer of the
 	 * (scheduled) distribution transfer itself.  This MUST be the same
 	 * account id across all application invocations for a given
@@ -122,16 +130,24 @@ export interface TreasuryInfo {
 	 */
 	transferPayer: string;
 	/**
+	 * Contains the list of Hex encoded private keys typically related to
+	 * the account that pays the network fees charged for the transaction
+	 * transfering tokens from the treasury.  The transfer payer can be the
+	 * same account as the treasury or the submit payer, but it does not
+	 * need to be.
+	 */
+	transferPayerSignatories: Signatory[];
+	/**
 	 * The address of the distribution token’s treasury account (0.0.x).
 	 */
 	tokenTreasury: string;
 	/**
-	 * Contains the list of Hex encoded private keys used to for scheduling
-	 * and countersigning distribution payment transactions.  Must include
-	 * the necessary key(s) to satisfy the `submitPayerId` crypto account
-	 * at a minimum.
+	 * Contains the list of Hex encoded private keys typically related to
+	 * the treasury for authorizing the transfer of tokens from the treasury
+	 * to other cypto accounts.  If this plan instance is intended to only
+	 * 'schedule' the transfer transactions, this list can be empty.
 	 */
-	signatories: Signatory[];
+	treasurySignatories: Signatory[];
 }
 /**
  * A summary of the distribution plan to be processed upon approval by the user.

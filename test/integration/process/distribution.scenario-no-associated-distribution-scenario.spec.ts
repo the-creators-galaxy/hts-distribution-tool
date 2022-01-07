@@ -44,11 +44,9 @@ describe('no associations distribution scenario', function () {
 					submitPayer: payer.toString(),
 					transferPayer: facet.distributionPayerInfo.receipt.accountId.toString(),
 					tokenTreasury: facet.treasuryInfo.receipt.accountId.toString(),
-					signatories: [
-						privateKeytoSignatory(payerPrivateKey),
-						privateKeytoSignatory(facet.distributionPayerInfo.privateKeys[0]),
-						privateKeytoSignatory(facet.treasuryInfo.privateKeys[1]),
-					],
+					submitPayerSignatories: [privateKeytoSignatory(payerPrivateKey)],
+					transferPayerSignatories: [privateKeytoSignatory(facet.distributionPayerInfo.privateKeys[0])],
+					treasurySignatories: [privateKeytoSignatory(facet.treasuryInfo.privateKeys[1])],
 				});
 				planSummary = await generateDistributionPlan(() => {});
 				planResult = await executeDistributionPlan(() => {});
@@ -157,11 +155,9 @@ describe('no associations distribution scenario', function () {
 					submitPayer: payer.toString(),
 					transferPayer: facet.distributionPayerInfo.receipt.accountId.toString(),
 					tokenTreasury: facet.treasuryInfo.receipt.accountId.toString(),
-					signatories: [
-						privateKeytoSignatory(payerPrivateKey),
-						privateKeytoSignatory(facet.distributionPayerInfo.privateKeys[0]),
-						privateKeytoSignatory(facet.treasuryInfo.privateKeys[0]),
-					],
+					submitPayerSignatories: [privateKeytoSignatory(payerPrivateKey)],
+					transferPayerSignatories: [],
+					treasurySignatories: [privateKeytoSignatory(facet.treasuryInfo.privateKeys[0])],
 				});
 				planSummary = await generateDistributionPlan(() => {});
 				planResult = await executeDistributionPlan(() => {});

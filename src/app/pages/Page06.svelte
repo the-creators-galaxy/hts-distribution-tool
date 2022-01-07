@@ -180,9 +180,9 @@
 		margin-top: 1rem;
 	}
 	.tcg-success-notice > button {		
-		color: var(--tcg-green);
+		color: var(--cds-cs-500);
 	}
 	.tcg-error-notice > button {
-		color: var(--tcg-red);
+		color: var(--cds-ct-400);
 	}
 </style>

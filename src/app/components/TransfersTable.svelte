@@ -60,23 +60,23 @@ import { invoke } from "../common/ipc";
         position: relative;
         font-size: 0.875rem;
         border-radius: 0.75rem;
-        border: 1px solid var(--tcg-dark-gray2);
+        border: 1px solid var(--cds-nd-700);
         /* This is causing a visual bug with the rows of text apperaing above the sticky header */
         /* padding-top: 1px; */
         user-select: text;
-        background-color: var(--tcg-transparent-black);
+        background-color: var(--cds-nd-0-40);
     }
     div.headers 
     {
         position: sticky;
         top: -1px;
-        color: var(--tcg-green);
+        color: var(--cds-cs-500);
         display: grid;
         grid-template-columns: 1fr 1fr;
         justify-content: start;
         font-weight: 500;
-        background: var(--tcg-black);
-        border-bottom: 1px solid var(--tcg-dark-gray2);
+        background: var(--cds-nd-900);
+        border-bottom: 1px solid var(--cds-nd-700);
         margin-top: -1px;
         z-index: 1;
     }
@@ -87,7 +87,7 @@ import { invoke } from "../common/ipc";
     }
     div.headers > div:last-child
     {
-        border-left: 1px solid var(--tcg-dark-gray2);
+        border-left: 1px solid var(--cds-nd-700);
     }
     div.data 
     {
@@ -97,7 +97,7 @@ import { invoke } from "../common/ipc";
     div.data > div
     {
         padding: 0.25rem 1.5rem;
-        border-bottom: 1px solid var(--tcg-dark-gray2);
+        border-bottom: 1px solid var(--cds-nd-700);
     }
     div.data > div.account
     {
@@ -105,12 +105,12 @@ import { invoke } from "../common/ipc";
     }
     div.data > div.account:hover
     {
-        color: var(--tcg-green);
+        color: var(--cds-cs-500);
         text-decoration: underline;
     }
     div.data > div.amount
     {
-        border-left: 1px solid var(--tcg-dark-gray2);
+        border-left: 1px solid var(--cds-nd-700);
     }
     span.shard, span.realm, span.fraction
     {

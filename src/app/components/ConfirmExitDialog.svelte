@@ -81,7 +81,7 @@
         font-size: 0.875rem;
         font-weight: 500;
         line-height: 1.3125rem;
-        color: var(--tgc-light-gray);
+        color: var(--cds-nl-500);
         margin: 0;
         padding: 0;
     }
