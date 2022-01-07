@@ -507,6 +507,15 @@ footer > button {
 	aspect-ratio: 1 / 1;
 }
 
+.tcg-info-icon {
+	background-image: url('info-circle-light.svg');
+	background-repeat: no-repeat;
+	background-size: contain;
+	background-position: center;
+	width: 1rem;
+	aspect-ratio: 1 / 1;
+}
+
 .tcg-tab-strip {
 	margin: 0;
 	padding: 0;

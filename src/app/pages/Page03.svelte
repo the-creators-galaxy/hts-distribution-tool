@@ -5,6 +5,7 @@
 	import type { TreasuryInfo } from '../../common/primitives';
 	import { Pages } from '../common/pages';
 	import SignatoriesList from '../components/SignatoriesList.svelte';
+	import InfoDialog from '../components/InfoDialog.svelte';
 
 	const digits = /^\d+$/;
 	let treasuryInfo: TreasuryInfo;
@@ -53,7 +54,13 @@
 	{#if (treasuryInfo)}
 	<section>
 		<fieldset>
-			<h2>General details</h2>
+			<h2>
+				General details
+				<InfoDialog title="General details">
+					<p>The <b>Network</b> setting identifies the Hedera network where the token exists.  The default is the <i>main</i> production network, but this tool can also interact with the hedera <i>test</i> network.</p>
+					<p>The <b>Token ID</b> is the unique identifier of the Token in <i>&lt;shard&gt;.&lt;realm&gt;.&lt;num&gt;</i> form. </p>
+				</InfoDialog>
+			</h2>
 			<label for="networkId">Network</label>
 			<select bind:value={treasuryInfo.networkId} name="networkId">
 				<option value="{1}">Main</option>
@@ -63,21 +70,39 @@
 			<input type="text" bind:value={treasuryInfo.token} name="token" placeholder="Enter token id&mldr;"/>
 		</fieldset>
 		<fieldset>
-			<h2>Treasury</h2>
+			<h2>
+				Treasury
+				<InfoDialog title="Treasury">
+					<p>The Treasury&rsquo;s <b>Account ID</b> identifies the crypto account holding the tokens to be distributed, it is entered in <i>&lt;shard&gt;.&lt;realm&gt;.&lt;num&gt;</i> form.</p>
+					<p>The <b>Private Key</b> associated with the treasury may or may not be required depending on circumstances.  It is likely that you hold one or more private keys for the treasury account, this is where they should be entered.</p>
+				</InfoDialog>
+			</h2>
 			<label for="tokenTreasury">Account ID</label>
 			<input type="text" bind:value={treasuryInfo.tokenTreasury} name="tokenTreasury" placeholder="Enter token treasury account id&mldr;"/>
 			<label for="treasurySignatories">Private keys(s) (Optional)</label>
 			<SignatoriesList bind:signatories={treasuryInfo.treasurySignatories}></SignatoriesList>
 		</fieldset>
 		<fieldset>
-			<h2>Scheduling Payer</h2>
+			<h2>
+				Scheduling payer 
+				<InfoDialog title="Scheduling payer">
+					<p>The <b>Address ID</b> identifies the crypto account that will be charged for all transaction fees for submitting, countersigning, and collecting information for all processed distributions, except it is not necessarily that account that pays for the execution of the (scheduled) distribution itself.  It is entered in <i>&lt;shard&gt;.&lt;realm&gt;.&lt;num&gt;</i> form.  In some cases the distribution payer account may be the same as this account, but it is not required to be.</p>
+					<p>At least one <b>Private Key</b> is required to be associated with this account.  If the account is multi-sig, then sufficient keys must be present that can satisfy the signing requirements to unlock this account since it pays for scheduling and countersigning operations.</p>
+				</InfoDialog>
+			</h2>
 			<label for="submitPayer">Account ID</label>
 			<input type="text" bind:value={treasuryInfo.submitPayer} name="submitPayer" placeholder="Enter scheduling payer account id&mldr;"/>
 			<label for="submitPayerSignatories">Private keys(s)</label>
 			<SignatoriesList bind:signatories={treasuryInfo.submitPayerSignatories}></SignatoriesList>
 		</fieldset>
 		<fieldset>
-			<h2>Distribution Payer</h2>
+			<h2>
+				Distribution payer
+				<InfoDialog title="Distribution payer">
+					<p>The <b>Address ID</b> identifies the crypto account that pays for the scheduled distribution after sufficient parties have countersigned.  This value must be the same across all participating parties.  It is entered in <i>&lt;shard&gt;.&lt;realm&gt;.&lt;num&gt;</i> form.  Under certain circumstances it may be the same as the treasury or scheduling accounts.</p>
+					<p>The <b>Private Key</b> associated with the distribution payer need only be entered by one participant, or not at all if the account is the same as the scheduling or treasury accounts.  If the account is multi-sig, then sufficient keys may be added here or entered individually by multiple participants to satisfy the signing requirements to unlock the account pay distribution transaction fees.</p>
+				</InfoDialog>
+			</h2>
 			<label for="transferPayer">Account ID</label>
 			<input type="text" bind:value={treasuryInfo.transferPayer} name="transferPayer" placeholder="Enter distribution payer account id&mldr;"/>
 			<label for="transferPayerSignatories">Private keys(s) (Optional)</label>
@@ -128,5 +153,11 @@
 		line-height: 1.5rem;
 		font-weight: 600;
 		border-bottom: 1px solid var(  --cds-nd-500);		
+	}
+	p {
+		margin-bottom: 1rem;
+	}
+	b, i {
+		color: var(--cds-cs-500);
 	}
 </style>
