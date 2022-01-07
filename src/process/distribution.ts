@@ -385,7 +385,7 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 	treasuryKeys = tryParsePrivateKeys(info.treasurySignatories, 'Treasury Private Key');
 	submitPayerKeys = tryParsePrivateKeys(info.submitPayerSignatories, 'Scheduling Payer Private Key');
 	transferPayerKeys = tryParsePrivateKeys(info.transferPayerSignatories, 'Transfer Payer Private Key');
-	if(submitPayerKeys.length === 0) {
+	if (submitPayerKeys.length === 0) {
 		tokenInfoErrors.push('Must have at least one Scheduling Payer Key.');
 	}
 	return Promise.resolve();
@@ -1182,9 +1182,9 @@ function privateKeysToSignatories(privateKeys: PrivateKey[]): Signatory[] {
 	});
 }
 /**
- * Helper function that signs a given transaction with all 
+ * Helper function that signs a given transaction with all
  * private keys available.
- * 
+ *
  * @param transaction transaction to sign.
  */
 async function signTransactionWithAllKeys(transaction: Transaction): Promise<void> {

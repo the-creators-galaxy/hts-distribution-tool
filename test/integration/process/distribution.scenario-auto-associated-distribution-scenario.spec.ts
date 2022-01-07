@@ -46,7 +46,7 @@ describe('fully auto-associated distribution scenario', function () {
 					tokenTreasury: facet.treasuryInfo.receipt.accountId.toString(),
 					submitPayerSignatories: [privateKeytoSignatory(payerPrivateKey)],
 					transferPayerSignatories: [privateKeytoSignatory(facet.distributionPayerInfo.privateKeys[0])],
-					treasurySignatories: [privateKeytoSignatory(facet.treasuryInfo.privateKeys[1])]
+					treasurySignatories: [privateKeytoSignatory(facet.treasuryInfo.privateKeys[1])],
 				});
 				planSummary = await generateDistributionPlan(() => {});
 				planResult = await executeDistributionPlan(() => {});
@@ -157,7 +157,7 @@ describe('fully auto-associated distribution scenario', function () {
 					tokenTreasury: facet.treasuryInfo.receipt.accountId.toString(),
 					submitPayerSignatories: [privateKeytoSignatory(payerPrivateKey)],
 					transferPayerSignatories: [],
-					treasurySignatories: [privateKeytoSignatory(facet.treasuryInfo.privateKeys[0])]
+					treasurySignatories: [privateKeytoSignatory(facet.treasuryInfo.privateKeys[0])],
 				});
 				planSummary = await generateDistributionPlan(() => {});
 				planResult = await executeDistributionPlan(() => {});
