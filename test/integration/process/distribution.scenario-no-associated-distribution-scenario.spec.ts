@@ -14,7 +14,7 @@ import {
 	saveDistributionResultsFile,
 	setTreasuryInformation,
 } from '../../../src/process/distribution';
-import { NetworkId } from '../../../src/common/primitives';
+import { NetworkId, PaymentStage } from '../../../src/common/primitives';
 import { payer, payerPrivateKey } from '../facets/environment.facets';
 
 describe('no associations distribution scenario', function () {
@@ -89,7 +89,7 @@ describe('no associations distribution scenario', function () {
 					const payment = finalResult.payments[i];
 					expect(payment.index).to.equal(i);
 					expect(payment.account).to.equal(accountInfo.receipt.accountId.toString());
-					expect(payment.status).to.equal(`Scheduling: Awaiting Add'l Signatures`);
+					expect(payment.stage).to.equal(PaymentStage.Scheduled);
 					expect(payment).has.property('schedulingTx');
 					expect(payment).has.property('scheduledTx');
 					expect(payment).has.property('scheduleId');
@@ -126,7 +126,7 @@ describe('no associations distribution scenario', function () {
 						expect(record[6]).to.equal('n/a');
 						expect(record[7]).to.not.be.empty;
 						expect(record[8]).to.equal('RECEIPT_NOT_FOUND');
-						expect(record[9]).to.equal(`Scheduling: Awaiting Add'l Signatures`);
+						expect(record[9]).to.equal('Scheduled');
 						expect(record[10]).to.not.be.empty;
 						expect(record[11]).to.not.be.empty;
 						expect(record[12]).to.equal('n/a');
@@ -206,7 +206,7 @@ describe('no associations distribution scenario', function () {
 					const payment = finalResult.payments[i];
 					expect(payment.index).to.equal(i);
 					expect(payment.account).to.equal(accountInfo.receipt.accountId.toString());
-					expect(payment.status).to.equal('Status: TOKEN_NOT_ASSOCIATED_TO_ACCOUNT');
+					expect(payment.stage).to.equal(PaymentStage.Failed);
 					expect(payment).has.property('schedulingTx');
 					expect(payment).has.property('scheduledTx');
 					expect(payment).has.property('scheduleId');
@@ -243,7 +243,7 @@ describe('no associations distribution scenario', function () {
 						expect(record[6]).to.equal('SUCCESS');
 						expect(record[7]).to.not.be.empty;
 						expect(record[8]).to.equal('TOKEN_NOT_ASSOCIATED_TO_ACCOUNT');
-						expect(record[9]).to.equal(`Status: TOKEN_NOT_ASSOCIATED_TO_ACCOUNT`);
+						expect(record[9]).to.equal('Failed');
 						expect(record[10]).to.not.be.empty;
 						expect(record[11]).to.not.be.empty;
 						expect(record[12]).to.not.be.empty;

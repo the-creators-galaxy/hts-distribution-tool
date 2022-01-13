@@ -17,7 +17,17 @@ import {
 } from '@hashgraph/sdk';
 import type AccountBalance from '@hashgraph/sdk/lib/account/AccountBalance';
 import { BigNumber } from 'bignumber.js';
-import { CsvDataSummary, CsvParseError, DistributionPlanSummary, NetworkId, Signatory, TreasuryInfo } from '../common/primitives';
+import {
+	CsvDataSummary,
+	CsvParseError,
+	DistributionPlanSummary,
+	DistributionResult,
+	NetworkId,
+	PaymentStage,
+	PaymentStep,
+	Signatory,
+	TreasuryInfo,
+} from '../common/primitives';
 import { CalaxyClient } from './client/client';
 import { runClientsConcurrently } from './client/concurrent';
 import { NodeHealth } from './client/node-health';
@@ -29,7 +39,7 @@ import { Distribution, loadAndParseCsvDistributionFile } from './csv';
  * Enumerates the various in-flight states of distribution
  * processing for an individual payment.
  */
-enum PaymentStage {
+enum ProcessingStage {
 	/**
 	 * Processing has not yet started for this payment.
 	 */
@@ -85,16 +95,14 @@ interface PaymentRecord extends Distribution {
 	 */
 	amountInTinyToken?: BigNumber;
 	/**
-	 * Flag indicating that the payment is actively being
-	 * processed by the system.
+	 * The current macro status of this distribution payment.
 	 */
-	inProgress?: boolean;
+	stage: PaymentStage;
 	/**
-	 * A interpreted string representation of the current
-	 * status of the payment, derived from receipts and status
-	 * of various network transaction requests.
+	 * The current sub-step within the processing algorithm
+	 * this record is at.
 	 */
-	status: string;
+	step: PaymentStep;
 	/**
 	 * The latest result of the scheduling request made by the
 	 * application to the hedera network.  Under certain
@@ -633,7 +641,7 @@ export async function generateDistributionPlan(progress: (any) => void): Promise
  * app sees them and a list of any errors that may indicate one or more distribution
  * payments failed.
  */
-export async function executeDistributionPlan(progress: (any) => void): Promise<any> {
+export async function executeDistributionPlan(progress: (any) => void): Promise<{ errors: string[]; payments: DistributionResult[] }> {
 	let schedulingInProgress = true;
 	let paymentMonitor = null;
 	let unknownCompletionStatus = [];
@@ -644,7 +652,8 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 			return {
 				...distribution,
 				index,
-				status: 'Not Started',
+				stage: PaymentStage.NotStarted,
+				step: PaymentStep.NotStarted,
 			};
 		});
 	const summaryWorker = new Worker('./public/build/distribution-worker.js', {
@@ -657,11 +666,14 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 	} else if (csvErrors.length > 0 || tokenInfoErrors.length > 0 || preGenerationErrors.length > 0) {
 		executionGenerationErrors.push('There are errors with distribution plan that prevent execution.');
 	} else {
-		monitorPaymentsForCompletion();
+		checkForAdditionalCompletionReceipts(false);
 		await runClientsConcurrently(clients, payments, processPayment);
 	}
-	clearTimeout(paymentMonitor);
 	schedulingInProgress = false;
+	clearTimeout(paymentMonitor);
+	if (unknownCompletionStatus.length > 0) {
+		await checkForAdditionalCompletionReceipts(true);
+	}
 	await summaryWorker.terminate();
 	return {
 		errors: executionGenerationErrors,
@@ -688,34 +700,34 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 	 */
 	async function processPayment(client: CalaxyClient, payment: PaymentRecord): Promise<NodeHealth> {
 		// This could be a retry.
-		if (!payment.inProgress) {
-			payment.inProgress = true;
+		if (!payment.stage) {
+			payment.stage = PaymentStage.Processing;
+			payment.step = PaymentStep.Scheduling;
 			payment.startedDateTime = new Date();
 		}
-		let paymentStage = PaymentStage.Scheduling;
-		while (paymentStage !== PaymentStage.Finished) {
+		let paymentStage = ProcessingStage.Scheduling;
+		while (paymentStage !== ProcessingStage.Finished) {
 			updatePaymentStatusDescription();
 			switch (paymentStage) {
-				case PaymentStage.Scheduling:
+				case ProcessingStage.Scheduling:
 					paymentStage = await schedulePayment();
 					break;
-				case PaymentStage.Countersigning:
+				case ProcessingStage.Countersigning:
 					paymentStage = await countersignPayment();
 					break;
-				case PaymentStage.Confirming:
+				case ProcessingStage.Confirming:
 					paymentStage = await confirmPayment();
 					break;
-				case PaymentStage.Unhealthy:
-					// Break out, leave inProgress=true
+				case ProcessingStage.Unhealthy:
+					// Break out, leave stage=Processing;
 					// because it will be picked up by
 					// the next healthy client.
 					return NodeHealth.Unhealthy;
-				case PaymentStage.Failed:
-					paymentStage = PaymentStage.Finished;
+				case ProcessingStage.Failed:
+					paymentStage = ProcessingStage.Finished;
 					break;
 			}
 		}
-		payment.inProgress = false;
 		payment.finishedDateTime = new Date();
 		updatePaymentStatusDescription();
 		return (
@@ -729,7 +741,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 		 * if the schedule was already created, or to just look for an executed receipt.
 		 * (or log an error if necessary).
 		 */
-		async function schedulePayment(): Promise<PaymentStage> {
+		async function schedulePayment(): Promise<ProcessingStage> {
 			if (payment.schedulingResult?.receipt) {
 				// this might be a re-do due to a dead node,
 				// we don't want to submit duplicate transactions
@@ -737,9 +749,11 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 				// successful response code.
 				switch (payment.schedulingResult.receipt.status) {
 					case Status.Success:
-						return PaymentStage.Confirming;
+						payment.step = PaymentStep.Confirming;
+						return ProcessingStage.Confirming;
 					case Status.IdenticalScheduleAlreadyCreated:
-						return PaymentStage.Countersigning;
+						payment.step = PaymentStep.Countersigning;
+						return ProcessingStage.Countersigning;
 				}
 			}
 			const { receipt, nodeHealth, error } = (payment.schedulingResult = await client.executeTransaction(async (nodeIds) => {
@@ -757,32 +771,40 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 			}));
 			payment.scheduledDateTime = new Date();
 			if (nodeHealth === NodeHealth.Unhealthy) {
-				return PaymentStage.Unhealthy;
+				return ProcessingStage.Unhealthy;
 			} else if (receipt) {
 				switch (receipt.status) {
 					case Status.Success:
-						return PaymentStage.Confirming;
+						payment.step = PaymentStep.Confirming;
+						return ProcessingStage.Confirming;
 					case Status.IdenticalScheduleAlreadyCreated:
-						return PaymentStage.Countersigning;
+						payment.step = PaymentStep.Countersigning;
+						return ProcessingStage.Countersigning;
 					default:
 						executionGenerationErrors.push(
 							`Payment no. ${payment.index} to ${payment.account.toString()} scheduling failed with code ${receipt.status.toString()}.`,
 						);
-						return PaymentStage.Failed;
+						payment.stage = PaymentStage.Failed;
+						payment.step = PaymentStep.Finished;
+						return ProcessingStage.Failed;
 				}
 			} else if (error) {
 				if (error instanceof StatusError) {
 					if (error.status === Status.DuplicateTransaction) {
-						return PaymentStage.Scheduling;
+						return ProcessingStage.Scheduling;
 					}
 					executionGenerationErrors.push(
 						`Payment no. ${payment.index} to ${payment.account.toString()} scheduling failed with code ${error.status.toString()}.`,
 					);
-					return PaymentStage.Failed;
+					payment.stage = PaymentStage.Failed;
+					payment.step = PaymentStep.Finished;
+					return ProcessingStage.Failed;
 				}
 			}
 			executionGenerationErrors.push(`Payment no. ${payment.index} to ${payment.account.toString()} scheduling failed for an unknown reason.`);
-			return PaymentStage.Failed;
+			payment.stage = PaymentStage.Failed;
+			payment.step = PaymentStep.Finished;
+			return ProcessingStage.Failed;
 		}
 		/**
 		 * Attempts to counter sign a pre-existing scheduled payment for this
@@ -792,7 +814,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 		 * the codes returned from this attempt, it could be to look for an executed
 		 * receipt. (or log an error if necessary).
 		 */
-		async function countersignPayment(): Promise<PaymentStage> {
+		async function countersignPayment(): Promise<ProcessingStage> {
 			if (payment.countersigningResult?.receipt) {
 				// this might be a re-do due to a dead node,
 				// we don't want to submit duplicate transactions
@@ -802,13 +824,15 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 					case Status.Success:
 					case Status.ScheduleAlreadyExecuted:
 					case Status.NoNewValidSignatures:
-						return PaymentStage.Confirming;
+						payment.step = PaymentStep.Confirming;
+						return ProcessingStage.Confirming;
 					case Status.InvalidScheduleId:
 						// Let's start over, something went
 						// terribly wrong on the network.
+						payment.step = PaymentStep.NotStarted;
 						payment.schedulingResult = undefined;
 						payment.countersigningResult = undefined;
-						return PaymentStage.Scheduling;
+						return ProcessingStage.Scheduling;
 				}
 			}
 			const { receipt, nodeHealth, error } = (payment.countersigningResult = await client.executeTransaction(async (nodeIds) => {
@@ -822,38 +846,46 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 			}));
 			payment.countersignedDateTime = new Date();
 			if (nodeHealth === NodeHealth.Unhealthy) {
-				return PaymentStage.Unhealthy;
+				return ProcessingStage.Unhealthy;
 			} else if (receipt) {
 				switch (receipt.status) {
 					case Status.Success:
 					case Status.NoNewValidSignatures:
 					case Status.ScheduleAlreadyExecuted:
-						return PaymentStage.Confirming;
+						payment.step = PaymentStep.Confirming;
+						return ProcessingStage.Confirming;
 					case Status.InvalidScheduleId:
 						// Let's start over, something went
 						// terribly wrong on the network.
+						payment.step = PaymentStep.Scheduling;
 						payment.schedulingResult = undefined;
 						payment.countersigningResult = undefined;
-						return PaymentStage.Scheduling;
+						return ProcessingStage.Scheduling;
 					default:
 						executionGenerationErrors.push(
 							`Payment no. ${payment.index} to ${payment.account.toString()} countersigning failed with code ${receipt.status.toString()}.`,
 						);
-						return PaymentStage.Failed;
+						payment.stage = PaymentStage.Failed;
+						payment.step = PaymentStep.Finished;
+						return ProcessingStage.Failed;
 				}
 			} else if (error) {
 				if (error instanceof StatusError) {
 					if (error.status === Status.DuplicateTransaction) {
-						return PaymentStage.Countersigning;
+						return ProcessingStage.Countersigning;
 					}
 					executionGenerationErrors.push(
 						`Payment no. ${payment.index} to ${payment.account.toString()} countersigning failed with code ${error.status.toString()}.`,
 					);
-					return PaymentStage.Failed;
+					payment.stage = PaymentStage.Failed;
+					payment.step = PaymentStep.Finished;
+					return ProcessingStage.Failed;
 				}
 			}
 			executionGenerationErrors.push(`Payment no. ${payment.index} to ${payment.account.toString()} countersigning failed for an unknown reason.`);
-			return PaymentStage.Failed;
+			payment.stage = PaymentStage.Failed;
+			payment.step = PaymentStep.Finished;
+			return ProcessingStage.Failed;
 		}
 		/**
 		 * Attempts to retrieve an executed receipt for the scheduled distribution,
@@ -864,38 +896,48 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 		 * on the codes returned from this attempt, it could be to mark the
 		 * process as complete or log an error if necessary.
 		 */
-		async function confirmPayment(): Promise<PaymentStage> {
+		async function confirmPayment(): Promise<ProcessingStage> {
 			if (payment.confirmationResult?.response) {
 				// this might be a re-do due to a dead node,
 				// we don't want to submit duplicate queries
 				// if we know they were already executed with a
 				// successful response code.
-				return PaymentStage.Finished;
+				payment.stage = payment.confirmationResult?.response.status === Status.Success ? PaymentStage.Completed : PaymentStage.Failed;
+				payment.step = PaymentStep.Finished;
+				return ProcessingStage.Finished;
 			}
 			const scheduledTxId = payment.schedulingResult.receipt.scheduledTransactionId;
 			const { response, nodeHealth, error } = (payment.confirmationResult = await client.executeQuery((nodeIds) =>
 				Promise.resolve(new TryGetTransactionReceiptQuery().setTransactionId(scheduledTxId).setNodeAccountIds(nodeIds)),
 			));
 			if (nodeHealth === NodeHealth.Unhealthy) {
-				return PaymentStage.Unhealthy;
+				return ProcessingStage.Unhealthy;
 			} else if (response) {
-				return PaymentStage.Finished;
+				payment.stage = response.status === Status.Success ? PaymentStage.Completed : PaymentStage.Failed;
+				payment.step = PaymentStep.Finished;
+				return ProcessingStage.Finished;
 			} else if (error) {
 				if (error instanceof StatusError) {
 					if (error.status === Status.ReceiptNotFound) {
 						unknownCompletionStatus.push(payment);
-						return PaymentStage.Finished;
+						payment.stage = PaymentStage.Scheduled;
+						payment.step = PaymentStep.Confirming;
+						return ProcessingStage.Finished;
 					}
 					executionGenerationErrors.push(
 						`Payment no. ${payment.index} to ${payment.account.toString()} confirmation request failed with code ${error.status.toString()}.`,
 					);
-					return PaymentStage.Failed;
+					payment.stage = PaymentStage.Failed;
+					payment.step = PaymentStep.Finished;
+					return ProcessingStage.Failed;
 				}
 			}
 			executionGenerationErrors.push(
 				`Payment no. ${payment.index} to ${payment.account.toString()} confirmation request failed for an unknown reason.`,
 			);
-			return PaymentStage.Failed;
+			payment.stage = PaymentStage.Failed;
+			payment.step = PaymentStep.Finished;
+			return ProcessingStage.Failed;
 		}
 		/**
 		 * Helper function that examines the current state of a payment record
@@ -904,82 +946,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 		 * updated status.
 		 */
 		function updatePaymentStatusDescription() {
-			payment.status = statusToDescription();
 			summaryWorker.postMessage({ payment: castDistributionInfo(payment) });
-			function statusToDescription() {
-				if (payment.confirmationResult) {
-					const status = payment.confirmationResult.response?.status || (payment.confirmationResult.error as StatusError)?.status;
-					switch (status) {
-						case Status.Success:
-							return 'Distribution Completed';
-						case undefined:
-						case null:
-						case Status.ReceiptNotFound:
-							// Skip Status
-							break;
-						default:
-							return `Status: ${status.toString()}`;
-					}
-				}
-				if (payment.countersigningResult) {
-					const status = payment.countersigningResult.receipt?.status || (payment.countersigningResult.error as StatusError)?.status;
-					switch (status) {
-						case Status.Success:
-							return `Countersigning: Accepted by Network`;
-						case Status.NoNewValidSignatures:
-							return `Countersigning: Already Signed with these Key(s)`;
-						case Status.ScheduleAlreadyExecuted:
-							return `Countersigning: Already Completed`;
-						case Status.DuplicateTransaction:
-							return `Countersigning: Retrying Due to Tx Conflict`;
-						case undefined:
-						case null:
-							return `Countersigning Failed: ${categorizeErrorMessage(payment.countersigningResult.error)}`;
-						default:
-							return `Countersigning Failed: ${status.toString()}`;
-					}
-				}
-				if (payment.schedulingResult) {
-					const status = payment.schedulingResult.receipt?.status || (payment.schedulingResult.error as StatusError)?.status;
-					switch (status) {
-						case Status.Success:
-							return `Scheduling: Awaiting Add'l Signatures`;
-						case Status.IdenticalScheduleAlreadyCreated:
-							return `Scheduling: Distribution Already Started`;
-						case Status.DuplicateTransaction:
-							return `Scheduling: Retrying Due to Tx Conflict`;
-						case undefined:
-						case null:
-							return `Scheduling Failed: ${categorizeErrorMessage(payment.schedulingResult.error)}`;
-						default:
-							return `Scheduling Failed: ${status.toString()}`;
-					}
-				}
-				if (payment.inProgress) {
-					return 'Scheduling';
-				}
-				return 'Not Started';
-			}
-			/**
-			 * Catch-all method attempts to provide user-friendly descriptions of
-			 * error conditions and codes.
-			 * @param error the error object to examine.
-			 * @returns a more user freindly description of the error.
-			 */
-			function categorizeErrorMessage(error) {
-				if (error) {
-					const message = error.message || error.toString();
-					if (message.includes('RST_STREAM')) {
-						return 'Network Node Reset the gRPC Connection';
-					} else if (message.includes('UNAVAILABLE')) {
-						return 'Network Node is not Responsibe';
-					} else if (message.includes('TRANSACTION_EXPIRED')) {
-						return 'Network Node is Throttled';
-					}
-					return error.message || error.constructor.name;
-				}
-				return 'Error without Exception';
-			}
 		}
 	}
 	/**
@@ -987,16 +954,29 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 	 * receipts for distribution payments which have not yet been confirmed
 	 * to have been executed by asking for the receipt.
 	 */
-	async function monitorPaymentsForCompletion() {
+	async function checkForAdditionalCompletionReceipts(isFinal: boolean) {
 		let nextRound = [];
-		if (schedulingInProgress) {
+		if (schedulingInProgress || isFinal) {
 			const inputs = unknownCompletionStatus;
 			unknownCompletionStatus = [];
-			await runClientsConcurrently(clients, inputs, checkPaymentForCompletion);
-			for (const payment of nextRound) {
-				unknownCompletionStatus.push(payment);
+			for (const payment of inputs) {
+				payment.stage = PaymentStage.Processing;
+				payment.step = PaymentStep.Confirming;
+				summaryWorker.postMessage({ payment: castDistributionInfo(payment) });
 			}
-			paymentMonitor = setTimeout(() => monitorPaymentsForCompletion(), 60000).unref();
+			if (isFinal) {
+				// Wait for 10s to let the network catch up.
+				await new Promise<void>((resolve) => {
+					setTimeout(resolve, 10000);
+				});
+			}
+			await runClientsConcurrently(clients, inputs, checkPaymentForCompletion);
+			if (!isFinal) {
+				for (const payment of nextRound) {
+					unknownCompletionStatus.push(payment);
+				}
+				paymentMonitor = setTimeout(() => checkForAdditionalCompletionReceipts(false), 60000).unref();
+			}
 		}
 		/**
 		 * Attempts to retrieve a receipt for a scheduled and potentially completed
@@ -1014,15 +994,21 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
 		 */
 		async function checkPaymentForCompletion(client: CalaxyClient, payment: PaymentRecord): Promise<NodeHealth> {
 			const scheduledTxId = payment.schedulingResult.receipt.scheduledTransactionId;
-			const { response, nodeHealth } = (payment.confirmationResult = await client.executeQuery((nodeIds) =>
+			const { response, nodeHealth, error } = (payment.confirmationResult = await client.executeQuery((nodeIds) =>
 				Promise.resolve(new TryGetTransactionReceiptQuery().setTransactionId(scheduledTxId).setNodeAccountIds(nodeIds)),
 			));
 			if (response) {
-				payment.status = response.status === Status.Success ? 'Distribution Completed' : `Status: ${response.status.toString()}`;
-				summaryWorker.postMessage({ payment: castDistributionInfo(payment) });
+				payment.stage = response.status === Status.Success ? PaymentStage.Completed : PaymentStage.Failed;
+				payment.step = PaymentStep.Finished;
+			} else if (error && error instanceof StatusError && error.status !== Status.ReceiptNotFound) {
+				payment.stage = PaymentStage.Failed;
+				payment.step = PaymentStep.Finished;
 			} else {
+				payment.stage = PaymentStage.Scheduled;
+				payment.step = PaymentStep.Confirming;
 				nextRound.push(payment);
 			}
+			summaryWorker.postMessage({ payment: castDistributionInfo(payment) });
 			return nodeHealth;
 		}
 	}
@@ -1034,7 +1020,7 @@ export async function executeDistributionPlan(progress: (any) => void): Promise<
  * app sees them and a list of any errors that may indicate one or more distribution
  * payments failed.
  */
-export function getDistributionResults(): Promise<any> {
+export function getDistributionResults(): Promise<{ errors: string[]; payments: DistributionResult[] }> {
 	return Promise.resolve({
 		errors: executionGenerationErrors,
 		payments: payments.map(castDistributionInfo),
@@ -1080,12 +1066,12 @@ export function saveDistributionResultsFile(filePath: string): Promise<void> {
 				payment.amountInTinyToken.shiftedBy(-tokenDecimals).toString(10),
 				payment.schedulingResult?.receipt?.scheduleId?.toString() || 'n/a',
 				payment.schedulingResult?.transactionId?.toString() || 'n/a',
-				schedulingStatus?.toString() || 'n/a',
+				schedulingStatus?.toString() || payment.schedulingResult?.error?.message || 'n/a',
 				payment.countersigningResult?.transactionId?.toString() || 'n/a',
-				countersignStatus?.toString() || 'n/a',
+				countersignStatus?.toString() || payment.countersigningResult?.error?.message || 'n/a',
 				payment.schedulingResult?.receipt?.scheduledTransactionId?.toString() || 'n/a',
-				confirmationStatus?.toString() || 'n/a',
-				payment.status,
+				confirmationStatus?.toString() || payment.confirmationResult?.error?.message || 'n/a',
+				getStageLabel(payment.stage),
 				payment.startedDateTime?.toISOString() || 'n/a',
 				payment.scheduledDateTime?.toISOString() || 'n/a',
 				payment.countersignedDateTime?.toISOString() || 'n/a',
@@ -1131,17 +1117,16 @@ export function resetDistribution(): void {
  * @param info The original payment record information.
  * @returns An IPC friendly projection of the payment record information.
  */
-function castDistributionInfo(info: PaymentRecord) {
+function castDistributionInfo(info: PaymentRecord): DistributionResult {
 	return {
 		index: info.index,
 		account: info.account.toString(),
 		amount: info.amountInTinyToken.shiftedBy(-tokenDecimals).toString(10),
-		status: info.status,
+		stage: info.stage,
+		step: info.step,
 		schedulingTx: info.schedulingResult?.transactionId?.toString(),
 		scheduledTx: info.schedulingResult?.receipt?.scheduledTransactionId?.toString(),
 		scheduleId: info.schedulingResult?.receipt?.scheduleId?.toString(),
-		paymentStatus: info.confirmationResult?.response?.status?.toString(),
-		inProgress: !!info.inProgress,
 	};
 }
 /**
@@ -1202,5 +1187,25 @@ async function signTransactionWithAllKeys(transaction: Transaction): Promise<voi
 		for (const signatory of treasuryKeys) {
 			await transaction.sign(signatory);
 		}
+	}
+}
+/**
+ * Helper function that turns a payment stage enum into the
+ * human readable string.
+ *
+ * @param stage the stage to turn into a string representation
+ */
+function getStageLabel(stage: PaymentStage): string {
+	switch (stage) {
+		case PaymentStage.NotStarted:
+			return 'Not Started';
+		case PaymentStage.Processing:
+			return 'Processing';
+		case PaymentStage.Scheduled:
+			return 'Scheduled';
+		case PaymentStage.Completed:
+			return 'Completed';
+		case PaymentStage.Failed:
+			return 'Failed';
 	}
 }

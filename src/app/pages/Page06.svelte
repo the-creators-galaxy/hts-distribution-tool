@@ -7,11 +7,15 @@
 	import DistributionsTable from '../components/DistributionsTable.svelte';
 	import ErrorsTable from '../components/ErrorsTable.svelte';
 	import PagingController from '../components/PagingController.svelte';
+import { PaymentStage } from '../../common/primitives';
 
 	let selectedTab = 0;
 	let results = null;
 	let hasErrors = false;
 	let showRetry = false;
+	let scheduledCount = 0;
+	let completedCount = 0;
+	let failedCount = 0;
 
 	let transferPageNo = 1;
 	let errorsPageNo = 1;
@@ -28,6 +32,19 @@
 				payments: [],
 				errors: [(err.message || err.toString())]
 			};
+		}
+		for(let payment of results.payments) {
+			switch(payment.stage) {
+				case PaymentStage.Completed:
+					completedCount++;
+					break;
+				case PaymentStage.Failed:
+					failedCount++;
+					break;
+				case PaymentStage.Scheduled:
+					scheduledCount++;
+					break;
+			}
 		}
 		hasErrors = results.errors.length > 0;
 		selectedTab = hasErrors ? 1 : 0;
@@ -105,7 +122,15 @@
 		<section>
 			<div class="tcg-success-notice">
 				<div class="tcg-stat-group">
-					<div>Completed <span>{results.payments.length}</span></div>
+					{#if scheduledCount > 0}
+					<div>Scheduled <span>{scheduledCount}</span></div>
+					{/if}
+					{#if completedCount > 0}
+					<div>Completed <span>{completedCount}</span></div>
+					{/if}
+					{#if failedCount}
+					<div>Failed <span>{failedCount}</span></div>
+					{/if}
 				</div>
 				{#if saving}
 				<button class="tcg-light-spinner" disabled>Saving&mldr;</button>	
@@ -184,5 +209,14 @@
 	}
 	.tcg-error-notice > button {
 		color: var(--cds-ct-400);
+	}
+	.tcg-stat-group {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		justify-content: flex-start;
+		align-items: flex-start;
+		column-gap: 1rem;
+		row-gap: 1rem;
 	}
 </style>

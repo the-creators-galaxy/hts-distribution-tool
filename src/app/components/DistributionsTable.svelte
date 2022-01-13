@@ -1,4 +1,6 @@
 <script lang="ts">
+import { PaymentStage, PaymentStep } from "../../common/primitives";
+
     import { invoke } from "../common/ipc";
 
     export let payments: any[];
@@ -32,6 +34,23 @@
         }
     }
 
+    function getStatusText(stage, step) {
+        switch(stage) {
+            case PaymentStage.Processing:
+                switch(step){
+                    case PaymentStep.Scheduling: return 'Processing: Scheduling';
+                    case PaymentStep.Countersigning: return 'Processing: Countersigning';
+                    case PaymentStep.Confirming: return 'Processing: Confirming';
+                    case PaymentStep.Finished: return 'Processing: Finished';
+                }
+                return 'Processing';
+            case PaymentStage.Scheduled: return 'Scheduled';
+            case PaymentStage.Completed: return 'Completed';
+            case PaymentStage.Failed: return 'Failed';
+        }
+        return 'Not Started';
+    }
+
 </script>
 
 <div class="container" on:click={handleClick}>
@@ -45,7 +64,7 @@
             <th>Scheduling Transaction</th>
             <th>Distribution Transaction</th>
         </tr>
-        {#each payments as { index, account, amount, status, schedulingTx, scheduledTx, scheduleId }, rowNo}
+        {#each payments as { index, account, amount, stage, step, schedulingTx, scheduledTx, scheduleId }, rowNo}
         <tr data-rowno={rowNo+1}>
             <td>{index}</td>
             <td data-celltype="address">{account}</td>
@@ -55,7 +74,7 @@
             {:else}
                 <td></td>
             {/if}
-            <td>{status || ''}</td>
+            <td>{getStatusText(stage,step)}</td>
             {#if schedulingTx}
                 <td data-celltype="scheduling-tx">{schedulingTx}</td>
             {:else}
@@ -110,7 +129,7 @@
 		min-width: 7em;
 	}
 	th:nth-child(5) {
-		min-width: 22em;
+		min-width: 12em;
 	}
 	th:nth-child(6) {
 		min-width: 18em;
