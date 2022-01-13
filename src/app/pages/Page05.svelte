@@ -34,31 +34,42 @@
 	{#if data}
 	<section>
 		<p>{data.statusMessage}</p>
-		<div class="info">
-			<div class="summary">
-				<div class="tcg-stat-group">
-					<div>Not Started: <span>{data.notStartedCount}</span></div>
-					<div>Scheduling: <span>{data.schedulingCount}</span></div>
-					<div>Confirming: <span>{data.confirmingCount}</span></div>
-					<div>Completed: <span>{data.completedCount}</span></div>
+		{#if showDetails}
+			<div class="info">
+				<div class="summary">
+					<ul class="inline">
+						<li>Not Started: <span>{data.notStartedCount}</span></li>
+						<li>Processing: <span>{data.processingCount}</span></li>
+						<li>Scheduled: <span>{data.scheduledCount}</span></li>
+						<li>Completed: <span>{data.completedCount}</span></li>
+						<li>Failed: <span>{data.failedCount}</span></li>
+					</ul>
+					<button on:click={toggleDetails} class="hide">Hide details</button>
 				</div>
-				{#if showDetails}
-				<button on:click={toggleDetails} class="hide">Hide details</button>
-				{:else}
-				<button on:click={toggleDetails} class="reveal">View details</button>
-				{/if}
 			</div>
-			{#if showDetails}
-			<div class="details">
-				{#each Object.keys(data.summary) as item}
-				<div><span class="label">{item}: </span><span class="count">{data.summary[item]}</span></div>
-				{/each}
+			<div class="tab-page">
+				<DistributionsTable payments={data.payments}/>
 			</div>
-			{/if}
-		</div>
-		<div class="tab-page">
-			<DistributionsTable payments={data.payments}/>
-		</div>
+		{:else}
+			<div class="info">
+				<div class="summary">
+					<ul>
+						<li>Not Started: <span>{data.notStartedCount}</span></li>
+						<li>Processing:
+							<ul>
+								<li>Scheduling: <span>{data.schedulingCount}</span></li>
+								<li>Countersigning: <span>{data.countersigningCount}</span></li>
+								<li>Confirming: <span>{data.confirmingCount}</span></li>
+							</ul>
+						</li>
+						<li>Scheduled: <span>{data.scheduledCount}</span></li>
+						<li>Completed: <span>{data.completedCount}</span></li>
+						<li>Failed: <span>{data.failedCount}</span></li>
+					</ul>
+					<button on:click={toggleDetails} class="reveal">View details</button>
+				</div>
+			</div>
+		{/if}
 	</section>
 	{/if}
 	<ConfirmExitDialog />
@@ -84,24 +95,30 @@
 		flex-direction: row;
 		flex-wrap: wrap;
 		justify-content: space-between;
-		align-items: center;
+		align-items: flex-start;
 		column-gap: 1rem;
 		row-gap: 1rem;
 	}
 	div.summary > button {
 		margin-left: auto;
 	}
-	div.details {
-		font-size: 0.875rem;
-		line-height: 1.2rem;
-		border-top: 1px solid var(--cds-nd-600);
-		margin-top: 1.125rem;
-		padding-top: 1.125rem;
-		grid-column: 1 / 3;
+	ul {
+		margin: 0;
 	}
-	span.count {
-		min-width: 6rem;
-		text-align: right;
+	li {
+		color: var(--cds-nl-700);
+	}
+	li > span {
 		color: var(--cds-nl-0);
+	}
+	ul.inline {
+		margin-top: 0.375rem;
+		padding: 0;
+		display: inline-block;
+		list-style: none;
+	}
+	ul.inline > li {
+		display: inline-block;
+		margin-right: 1rem;
 	}
 </style>

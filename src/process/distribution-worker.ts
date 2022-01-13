@@ -1,10 +1,12 @@
 import { parentPort, workerData } from 'worker_threads';
+import { DistributionResult, PaymentStage, PaymentStep } from '../common/primitives';
 /**
  * WebWorker helper module that moves the cpu bound
  * summary algorithm off the user interface thread.
  */
-let payments = workerData.payments;
+let payments = workerData.payments as DistributionResult[];
 let pendingUpdate = null;
+let percent = 0;
 parentPort.on('message', handleProgressUpdate);
 generateSummary();
 /**
@@ -15,10 +17,10 @@ generateSummary();
  */
 function handleProgressUpdate(data) {
 	if (data.payments) {
-		payments = data.payments;
+		payments = data.payments as DistributionResult[];
 	}
 	if (data.payment && payments[data.payment.index]) {
-		payments[data.payment.index] = data.payment;
+		payments[data.payment.index] = data.payment as DistributionResult;
 	}
 	if (!pendingUpdate) {
 		pendingUpdate = setTimeout(generateSummary, 1000);
@@ -30,43 +32,37 @@ function handleProgressUpdate(data) {
  * posts a summary message to the channel.
  */
 function generateSummary() {
-	let notStartedCount = 0;
-	let schedulingCount = 0;
-	let confirmingCount = 0;
-	let completedCount = 0;
-	let summary = {};
+	let stageCounts = {};
+	let stepCounts = {};
 	for (const item of payments) {
-		const key = item.status;
-		if (key) {
-			summary[key] = (summary[key] || 0) + 1;
-		}
-		if (item.inProgress) {
-			if (item.scheduleId) {
-				confirmingCount = confirmingCount + 1;
-			} else {
-				schedulingCount = schedulingCount + 1;
-			}
-		} else {
-			if (item.scheduleId) {
-				completedCount = completedCount + 1;
-			} else {
-				notStartedCount = notStartedCount + 1;
-			}
-		}
+		const stageKey = item.stage;
+		stageCounts[stageKey] = (stageCounts[stageKey] || 0) + 1;
 	}
-	const inProgressPayments = payments.filter((p) => p.inProgress);
-	const percent = Math.min(99.9, payments.length > 0 ? (100 * completedCount) / payments.length : 0);
+	const inProgress = payments.filter((d) => d.stage === PaymentStage.Processing);
+	for (const item of inProgress) {
+		const stepKey = item.step;
+		stepCounts[stepKey] = (stepCounts[stepKey] || 0) + 1;
+	}
+	const finishedCount = payments.length - (stageCounts[PaymentStage.NotStarted] || 0) - inProgress.length;
+	const transientPercent = Math.min(99.9, payments.length > 0 ? (100 * finishedCount) / payments.length : 0);
+	// Due to an artifact that "scheduled" can temporarily
+	// be added back to processing to see if its been
+	// "completed".  The percentage should not go backwards
+	percent = Math.max(transientPercent, percent);
 	const percentDisplay = percent > 10 ? percent.toFixed(1) : percent > 1 ? percent.toFixed(2) : percent.toFixed(3);
 	const statusMessage = `Scheduling Payments, ${percentDisplay}% complete.`;
 	pendingUpdate = null;
 	parentPort.postMessage({
 		statusMessage,
-		summary,
-		payments: inProgressPayments,
-		notStartedCount,
-		schedulingCount,
-		confirmingCount,
-		completedCount,
+		notStartedCount: stageCounts[PaymentStage.NotStarted] || 0,
+		processingCount: stageCounts[PaymentStage.Processing] || 0,
+		scheduledCount: stageCounts[PaymentStage.Scheduled] || 0,
+		completedCount: stageCounts[PaymentStage.Completed] || 0,
+		failedCount: stageCounts[PaymentStage.Failed] || 0,
+		schedulingCount: stepCounts[PaymentStep.Scheduling] || 0,
+		countersigningCount: stepCounts[PaymentStep.Countersigning] || 0,
+		confirmingCount: stepCounts[PaymentStep.Confirming] || 0,
+		payments: inProgress,
 	});
 }
 export {};

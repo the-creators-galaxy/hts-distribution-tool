@@ -13,6 +13,90 @@ export enum NetworkId {
 	Test = 2,
 }
 /**
+ * Enumerator identifying the macro stage an individual
+ * payment may be in.  There are three ending stage
+ * results: scheduled, completed and failed.
+ */
+export enum PaymentStage {
+	/**
+	 * Payment processing for the associated
+	 * distribution has not yet started.
+	 */
+	NotStarted = 0,
+	/**
+	 * Processing this distribution is in progress.
+	 * Additional sub-steps are identified by the
+	 * PaymentStep enumeration.
+	 */
+	Processing = 1,
+	/**
+	 * The process completed with the scheduled step.
+	 * The distribution has been scheduled with the
+	 * network and requires additional signatures
+	 * before transfers can be made.
+	 */
+	Scheduled = 2,
+	/**
+	 * The process completed successfully, and token
+	 * transfers have been completed.
+	 */
+	Completed = 3,
+	/**
+	 * The process finished, but with an unrecoverable
+	 * error.  Details of the error can be found by
+	 * investigating the individual error codes produced
+	 * by the network receipts attached to the distribution
+	 * record.  Also, the PaymentStep enumeration indicates
+	 * in which sub-step the process failed.
+	 */
+	Failed = 4,
+}
+/**
+ * Enumerator identifying the individual steps carried
+ * out during active processing of a distribution record.
+ */
+export enum PaymentStep {
+	/**
+	 * Payment processing for the associated
+	 * distribution has not yet started.
+	 */
+	NotStarted = 0,
+	/**
+	 * Currently attempting to schedule a new
+	 * pending transaction with the network for
+	 * the distribution payment.
+	 */
+	Scheduling = 1,
+	/**
+	 * When scheduling the payment, it was
+	 * determined it already existed.  Currently
+	 * attempting to add signatures to the scheduled
+	 * pending distribution payment.
+	 */
+	Countersigning = 2,
+	/**
+	 * The payment was either scheduled or countersigned,
+	 * but the final disposition (were there enough
+	 * signatures for it to complete the payment) is unknown.
+	 * The algorithm is asking the network for a receipt
+	 * to see if the payment has been completed (or failed),
+	 * or if it still requires additional signatures
+	 * (in which case no receipt will be found).
+	 */
+	Confirming = 3,
+	/**
+	 * The algorithm has completed processing of the payment
+	 * record, the final disposition will be set in the
+	 * PaymentStage value, and will be one of scheduled
+	 * (requires additional signatures before completion),
+	 * completed (transfer payment executed successfully
+	 * and tokens were transferred) or failed (sufficient
+	 * signatures were provided, but the transfer failed
+	 * for other reasons).
+	 */
+	Finished = 4,
+}
+/**
  * Object containing Hex Encoded String representations of
  * an ED25519 private key with its corresponding public key
  * (typically for display purposes).
@@ -182,4 +266,48 @@ export interface DistributionPlanSummary {
 	 * part of this distribution.
 	 */
 	transfers: { account: string; amount: string }[];
+}
+/**
+ * Interface describing the shape of data returned by processing
+ * algorithms in progress for updating user components.
+ */
+export interface DistributionResult {
+	/**
+	 * Distribution index position in the array of payments,
+	 * used to correlate intermediate results.
+	 */
+	index: number;
+	/**
+	 * The account number in shard.realm.num form.
+	 */
+	account: string;
+	/**
+	 * The amount of distribution in string form.
+	 */
+	amount: string;
+	/**
+	 * An enumeration indicating the overall stage of the
+	 * payment (not started, processing, completed).
+	 */
+	stage: PaymentStage;
+	/**
+	 * An enumeration indicating the individual step in
+	 * the processing pipeline the payment is currently
+	 * in (only valid when the stage is processing).
+	 */
+	step: PaymentStep;
+	/**
+	 * The scheduling transaction in string form, if known.
+	 */
+	schedulingTx?: string;
+	/**
+	 * The transaction ID that will perform (or has performed)
+	 * the actual transfer of tokens for the distribution in
+	 * string form, if known.
+	 */
+	scheduledTx?: string;
+	/**
+	 * The scheduled transaction ID in string form, if known.
+	 */
+	scheduleId?: string;
 }
