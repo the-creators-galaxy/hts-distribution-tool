@@ -1,6 +1,6 @@
 import * as path from 'path';
 import * as fs from 'fs';
-import parse from 'csv-parse';
+import { parse } from 'csv-parse';
 import { expect } from 'chai';
 import 'mocha';
 import { createDistributionScenario, privateKeytoSignatory, recoverFunds } from '../facets/scenarios.facets';

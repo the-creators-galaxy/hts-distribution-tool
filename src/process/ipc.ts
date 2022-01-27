@@ -1,4 +1,5 @@
-import { ipcMain, IpcMainEvent } from 'electron';
+import type { IpcMainEvent } from 'electron';
+import { ipcMain } from 'electron';
 import type { IpcAsyncMessageRequest } from '../common/ipc';
 import {
 	executeDistributionPlan,

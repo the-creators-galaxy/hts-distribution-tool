@@ -1,5 +1,6 @@
 import { parentPort, workerData } from 'worker_threads';
-import { DistributionResult, PaymentStage, PaymentStep } from '../common/primitives';
+import type { DistributionResult } from '../common/primitives';
+import { PaymentStage, PaymentStep } from '../common/primitives';
 /**
  * WebWorker helper module that moves the cpu bound
  * summary algorithm off the user interface thread.

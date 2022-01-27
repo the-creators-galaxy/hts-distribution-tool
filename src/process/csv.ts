@@ -1,5 +1,5 @@
 import { createReadStream, existsSync } from 'fs';
-import parse from 'csv-parse';
+import { parse } from 'csv-parse';
 import { AccountId } from '@hashgraph/sdk';
 import { BigNumber } from 'bignumber.js';
 import type { CsvParseError } from '../common/primitives';
@@ -95,7 +95,7 @@ export async function loadAndParseCsvDistributionFile(filename: string): Promise
 					relax_column_count: true,
 					onRecord: (items, info) => {
 						rows = rows + 1;
-						if (info.error && info.error.code !== 'CSV_INCONSISTENT_RECORD_LENGTH') {
+						if (info.error && info.error.code !== 'CSV_RECORD_INCONSISTENT_FIELDS_LENGTH') {
 							errors.push({
 								line: rows,
 								column: 0,
