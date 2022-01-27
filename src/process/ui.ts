@@ -1,5 +1,5 @@
 import * as https from 'https';
-import { AccountId, TransactionId } from '@hashgraph/sdk';
+import { AccountId, ScheduleId, TransactionId } from '@hashgraph/sdk';
 import electron, { app, BrowserWindow, dialog } from 'electron';
 import { homedir } from 'os';
 import { NetworkId } from '../common/primitives';
@@ -106,9 +106,9 @@ export async function openTransactionExplorer(transactionId: string) {
  * transaction.
  */
 export async function openScheduledTransactionExplorer(scheduleId: string) {
+	const schedule = ScheduleId.fromString(scheduleId);
+	const scheduleIdAsString = schedule.toString();
 	try {
-		const schedule = AccountId.fromString(scheduleId);
-		const scheduleIdAsString = schedule.toString();
 		const url =
 			getNetworkId() === NetworkId.Test
 				? `https://v2.api.testnet.kabuto.sh/transaction?filter[entityId]=${scheduleIdAsString}`
@@ -125,11 +125,12 @@ export async function openScheduledTransactionExplorer(scheduleId: string) {
 				return;
 			}
 		}
-		// If not executed, navigate to the schedule page instead.
-		await openAddressExplorer(scheduleIdAsString);
-	} catch (err) {
-		throw new Error('Invalid Account Id');
 	}
+	catch (fetchError) {		
+		console.error(fetchError);
+	}
+	// If not discovered, navigate to the schedule page instead.
+	await openAddressExplorer(scheduleIdAsString);
 }
 /**
  * Helper function to fetch a JSON object from the
