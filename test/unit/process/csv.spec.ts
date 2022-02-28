@@ -1,7 +1,8 @@
 import * as path from 'path';
 import { expect } from 'chai';
 import 'mocha';
-import { CsvParseData, loadAndParseCsvDistributionFile } from '../../../src/process/csv';
+import type { CsvParseData } from '../../../src/process/csv';
+import { loadAndParseCsvDistributionFile } from '../../../src/process/csv';
 
 describe('CSV Processing Module', function () {
 	describe('method loadAndParseCsvDistributionFile', function () {
@@ -174,7 +175,7 @@ describe('CSV Processing Module', function () {
 				const err = data.errors.find((e) => e.line === 4);
 				expect(err.line).to.exist;
 				expect(err.column).to.equal(1);
-				expect(err.description).to.equal('Unable to parse Account ID: invalid format for entity ID');
+				expect(err.description).to.equal('Unable to parse Account ID: invalid account ID');
 			});
 			it('identifies distribution amount of zero', function () {
 				const err = data.errors.find((e) => e.line === 8);
@@ -192,7 +193,7 @@ describe('CSV Processing Module', function () {
 				const err = data.errors.find((e) => e.line === 18);
 				expect(err.line).to.exist;
 				expect(err.column).to.equal(1);
-				expect(err.description).to.equal('Unable to parse Account ID: invalid format for entity ID');
+				expect(err.description).to.equal('Unable to parse Account ID: invalid account ID');
 			});
 			it('identifies unparsable distribution amount', function () {
 				const err = data.errors.find((e) => e.line === 23);

@@ -17,24 +17,16 @@ import {
 } from '@hashgraph/sdk';
 import type AccountBalance from '@hashgraph/sdk/lib/account/AccountBalance';
 import { BigNumber } from 'bignumber.js';
-import {
-	CsvDataSummary,
-	CsvParseError,
-	DistributionPlanSummary,
-	DistributionResult,
-	NetworkId,
-	PaymentStage,
-	PaymentStep,
-	Signatory,
-	TreasuryInfo,
-} from '../common/primitives';
+import type { CsvDataSummary, CsvParseError, DistributionPlanSummary, DistributionResult, Signatory, TreasuryInfo } from '../common/primitives';
+import { NetworkId, PaymentStage, PaymentStep } from '../common/primitives';
 import { CalaxyClient } from './client/client';
 import { runClientsConcurrently } from './client/concurrent';
 import { NodeHealth } from './client/node-health';
 import type { QryResponse } from './client/qry-response';
 import { TryGetTransactionReceiptQuery } from './client/try-get-transaction-receipt';
 import type { TxResponse } from './client/tx-response';
-import { Distribution, loadAndParseCsvDistributionFile } from './csv';
+import type { Distribution } from './csv';
+import { loadAndParseCsvDistributionFile } from './csv';
 /**
  * Enumerates the various in-flight states of distribution
  * processing for an individual payment.
