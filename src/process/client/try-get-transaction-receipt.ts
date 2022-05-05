@@ -1,4 +1,5 @@
-import { ResponseCodeEnum } from '@hashgraph/proto';
+
+import { proto } from '@hashgraph/proto';
 import { TransactionReceiptQuery } from '@hashgraph/sdk';
 /**
  * An altered version of the `TransactionReceiptQuery` that
@@ -13,7 +14,7 @@ export class TryGetTransactionReceiptQuery extends TransactionReceiptQuery {
 		const result = super._shouldRetry(request, response);
 		if (result === 'Retry') {
 			const { nodeTransactionPrecheckCode } = this._mapResponseHeader(response);
-			if (nodeTransactionPrecheckCode === ResponseCodeEnum.RECEIPT_NOT_FOUND) {
+			if (nodeTransactionPrecheckCode === proto.ResponseCodeEnum.RECEIPT_NOT_FOUND) {
 				return 'Error';
 			}
 		}

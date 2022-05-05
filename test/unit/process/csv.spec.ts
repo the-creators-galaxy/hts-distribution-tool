@@ -175,7 +175,7 @@ describe('CSV Processing Module', function () {
 				const err = data.errors.find((e) => e.line === 4);
 				expect(err.line).to.exist;
 				expect(err.column).to.equal(1);
-				expect(err.description).to.equal('Unable to parse Account ID: invalid account ID');
+				expect(err.description).to.equal('Account Id is missing.');
 			});
 			it('identifies distribution amount of zero', function () {
 				const err = data.errors.find((e) => e.line === 8);
@@ -193,7 +193,7 @@ describe('CSV Processing Module', function () {
 				const err = data.errors.find((e) => e.line === 18);
 				expect(err.line).to.exist;
 				expect(err.column).to.equal(1);
-				expect(err.description).to.equal('Unable to parse Account ID: invalid account ID');
+				expect(err.description).to.equal('Unable to parse Account ID: 0.0.abc is not a valid address id.');
 			});
 			it('identifies unparsable distribution amount', function () {
 				const err = data.errors.find((e) => e.line === 23);
