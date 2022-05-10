@@ -66,8 +66,8 @@
 				<option value="{1}">Main</option>
 				<option value="{2}">Test</option>
 			</select>
-			<label for="token">Token ID</label>
-			<input type="text" bind:value={treasuryInfo.token} name="token" placeholder="Enter token id&mldr;"/>
+			<label for="token">Token id</label>
+			<input type="text" bind:value={treasuryInfo.token} name="token" placeholder="E.g. 0.0.123"/>
 		</fieldset>
 		<fieldset>
 			<h2>
@@ -77,9 +77,9 @@
 					<p>The <b>Private Key</b> associated with the treasury may or may not be required depending on circumstances.  It is likely that you hold one or more private keys for the treasury account, this is where they should be entered.</p>
 				</InfoDialog>
 			</h2>
-			<label for="tokenTreasury">Account ID</label>
-			<input type="text" bind:value={treasuryInfo.tokenTreasury} name="tokenTreasury" placeholder="Enter token treasury account id&mldr;"/>
-			<label for="treasurySignatories">Private keys(s) (Optional)</label>
+			<label for="tokenTreasury">Token treasury account id</label>
+			<input type="text" bind:value={treasuryInfo.tokenTreasury} name="tokenTreasury" placeholder="E.g. 0.0.456"/>
+			<label for="treasurySignatories">Treasury private keys(s) (optional)</label>
 			<SignatoriesList bind:signatories={treasuryInfo.treasurySignatories}></SignatoriesList>
 		</fieldset>
 		<fieldset>
@@ -90,9 +90,9 @@
 					<p>At least one <b>Private Key</b> is required to be associated with this account.  If the account is multi-sig, then sufficient keys must be present that can satisfy the signing requirements to unlock this account since it pays for scheduling and countersigning operations.</p>
 				</InfoDialog>
 			</h2>
-			<label for="submitPayer">Account ID</label>
-			<input type="text" bind:value={treasuryInfo.submitPayer} name="submitPayer" placeholder="Enter scheduling payer account id&mldr;"/>
-			<label for="submitPayerSignatories">Private keys(s)</label>
+			<label for="submitPayer">Scheduling payer account id</label>
+			<input type="text" bind:value={treasuryInfo.submitPayer} name="submitPayer" placeholder="E.g. 0.0.789"/>
+			<label for="submitPayerSignatories">Scheduling payer private keys(s)</label>
 			<SignatoriesList bind:signatories={treasuryInfo.submitPayerSignatories}></SignatoriesList>
 		</fieldset>
 		<fieldset>
@@ -103,9 +103,9 @@
 					<p>The <b>Private Key</b> associated with the distribution payer need only be entered by one participant, or not at all if the account is the same as the scheduling or treasury accounts.  If the account is multi-sig, then sufficient keys may be added here or entered individually by multiple participants to satisfy the signing requirements to unlock the account pay distribution transaction fees.</p>
 				</InfoDialog>
 			</h2>
-			<label for="transferPayer">Account ID</label>
-			<input type="text" bind:value={treasuryInfo.transferPayer} name="transferPayer" placeholder="Enter distribution payer account id&mldr;"/>
-			<label for="transferPayerSignatories">Private keys(s) (Optional)</label>
+			<label for="transferPayer">Distribution payer account id</label>
+			<input type="text" bind:value={treasuryInfo.transferPayer} name="transferPayer" placeholder="E.g. 0.0.321"/>
+			<label for="transferPayerSignatories">Distribution payer private keys(s) (optional)</label>
 			<SignatoriesList bind:signatories={treasuryInfo.transferPayerSignatories}></SignatoriesList>
 		</fieldset>
 	</section>
