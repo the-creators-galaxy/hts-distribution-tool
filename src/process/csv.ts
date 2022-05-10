@@ -121,9 +121,26 @@ export async function loadAndParseCsvDistributionFile(filename: string): Promise
 							return items;
 						}
 						columns = Math.max(columns, items.length);
+						const column0 = items[0];
+						if(column0 === null || column0 === undefined || column0.trim() === '') {
+							errors.push({
+								line: rows,
+								column: 1,
+								description: `Account Id is missing.`,
+							});
+							return items;							
+						}
+						if(!/^\d+\.\d+\.\d+$/.test(column0)) {
+							errors.push({
+								line: rows,
+								column: 1,
+								description: `Unable to parse Account ID: ${column0} is not a valid address id.`,
+							});
+							return items;							
+						}
 						let account: AccountId;
-						try {
-							account = AccountId.fromString(items[0]);
+						try {							
+							account = AccountId.fromString(column0);
 						} catch (err) {
 							errors.push({
 								line: rows,
