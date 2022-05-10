@@ -38,7 +38,7 @@
             <button on:click={() => clickRemovePrivateKey(index)} class="remove-item"></button>
         {/each}
     {/if}
-    <input type="text" bind:value={privateKey} name="privateKey" placeholder="Enter private key value&mldr;"/>
+    <input type="text" bind:value={privateKey} name="privateKey" placeholder="E.g. 302e020100300506032b657004220420&mldr;"/>
     <button on:click={clickAddPrivateKey} class="add-item"></button>
 </div>
 
