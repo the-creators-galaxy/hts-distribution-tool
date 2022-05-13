@@ -1,9 +1,9 @@
 <script lang="ts">
-import { invoke } from "../common/ipc";
-
+    import AccountInfoDialog from "./AccountInfoDialog.svelte";
 
   	export let transfers: { account:string, amount: string }[];
     export let decimals: number = 0;  
+    let accountInfoDialog: AccountInfoDialog;
 
     $: data = transfers.map(t => { 
         const [shard, realm, num] = t.account.split('.');
@@ -29,7 +29,7 @@ import { invoke } from "../common/ipc";
                 evt.preventDefault();
                 const transfer = transfers[index-1];
                 if(transfer) {
-                    await invoke('open-address-explorer',transfer.account);
+                    accountInfoDialog.showDialog(transfer.account);
                 }
             }
         }
@@ -47,6 +47,7 @@ import { invoke } from "../common/ipc";
         <div class="amount"><span class="whole">{whole}</span><span class="fraction">.{fraction}</span></div>
         {/each}
     </div>
+    <AccountInfoDialog bind:this={accountInfoDialog}/>
 </div>
 
 <style>

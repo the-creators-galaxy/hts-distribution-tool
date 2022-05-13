@@ -1,8 +1,7 @@
-import * as https from 'https';
 import { AccountId, ScheduleId, TransactionId } from '@hashgraph/sdk';
 import electron, { app, BrowserWindow, dialog } from 'electron';
 import { homedir } from 'os';
-import { NetworkId } from '../common/primitives';
+import { ExplorerId, NetworkId } from '../common/primitives';
 import { getNetworkId } from './distribution';
 /**
  * Displays a native file open dialog box for “csv” files to the user.
@@ -57,19 +56,45 @@ export async function getAppVersion(): Promise<string> {
 /**
  * Launches the operating system's default browser with
  * a URL crafted to display information for the targeted
- * account or schedule ID.   Current Implementation points
- * to Kabuto Hashgraph Explorer V.2.
+ * account ID
  *
- * @param accountId string representation of the account or
- * schedule ID to explore.
+ * @param accountId string representation of the account ID to explore.
+ * @param explorerId the explorer identifier.
  */
-export async function openAddressExplorer(accountId: string) {
+export async function openAccountExplorer(accountId: string, explorerId: ExplorerId) {
 	try {
 		const account = AccountId.fromString(accountId);
+		if (explorerId === ExplorerId.HashScan) {
+			const url =
+				getNetworkId() === NetworkId.Test
+					? `https://hashscan.io/#/testnet/account/${account.toString()}`
+					: `https://hashscan.io/#/mainnet/account/${account.toString()}`;
+			electron.shell.openExternal(url);
+		} else {
+			const url =
+				getNetworkId() === NetworkId.Test
+					? `https://testnet.dragonglass.me/hedera/accounts/${account.toString()}`
+					: `https://app.dragonglass.me/hedera/accounts/${account.toString()}`;
+			electron.shell.openExternal(url);
+		}
+	} catch (err) {
+		throw new Error('Invalid Account Id');
+	}
+}
+/**
+ * Launches the operating system's default browser with
+ * a URL crafted to display information for the targeted
+ * schedule ID
+ *
+ * @param scheduleId string representation of the schedule ID to explore.
+ */
+export async function openScheduleExplorer(scheduleId: string) {
+	try {
+		const schedule = ScheduleId.fromString(scheduleId);
 		const url =
 			getNetworkId() === NetworkId.Test
-				? `https://v2.explorer.kabuto.sh/id/${account.toString()}?network=testnet`
-				: `https://v2.explorer.kabuto.sh/id/${account.toString()}`;
+				? `https://testnet.dragonglass.me/hedera/search?q=${schedule.toString()}`
+				: `https://app.dragonglass.me/hedera/search?q=${schedule.toString()}`;
 		electron.shell.openExternal(url);
 	} catch (err) {
 		throw new Error('Invalid Account Id');
@@ -81,88 +106,28 @@ export async function openAddressExplorer(accountId: string) {
  * works with non-scheduled and non-nonce transaction IDs.  Implementation
  * points to Kabuto Hashgraph Explorer V.2.
  *
- * @param transactionId the transaction id in the standard id@sec.nano format.
+ * @param txId the transaction id structure.
+ * @param explorerId the explorer identifier.
  */
-export async function openTransactionExplorer(transactionId: string) {
+export async function openTransactionExplorer(txId: any, explorerId: ExplorerId) {
 	try {
-		const transaction = TransactionId.fromString(transactionId);
-		const url =
-			getNetworkId() === NetworkId.Test
-				? `https://v2.explorer.kabuto.sh/transaction/${transaction.toString()}?network=testnet`
-				: `https://v2.explorer.kabuto.sh/transaction/${transaction.toString()}`;
-		electron.shell.openExternal(url);
+		if (explorerId === ExplorerId.HashScan) {
+			const transactionId = `${txId.accountId}-${txId.seconds.toFixed(0)}-${txId.nanos.toFixed(0).padStart(9, '0')}`;
+			const url =
+				getNetworkId() === NetworkId.Test
+					? `https://hashscan.io/#/testnet/transaction/${transactionId}`
+					: `https://hashscan.io/#/mainnet/transaction/${transactionId}`;
+			electron.shell.openExternal(url);
+		} else {
+			const [shard, realm, num] = txId.accountId.split('.');
+			const transactionId = `${shard}${realm}${num}${txId.seconds.toFixed(0)}${txId.nanos.toFixed(0).padStart(9, '0')}`;
+			const url =
+				getNetworkId() === NetworkId.Test
+					? `https://testnet.dragonglass.me/hedera/transactions/${transactionId}`
+					: `https://app.dragonglass.me/hedera/transactions/${transactionId}`;
+			electron.shell.openExternal(url);
+		}
 	} catch (err) {
 		throw new Error('Invalid Account Id');
 	}
-}
-/**
- * Attempts to launch the operating system's default browser with a URL crafted
- * to display information for the transaction that was executed by the given
- * schedule.  If the scheduled transaction has not yet been executed, the URL
- * will point to information for the scheduled transaction (by ID) itself.
- * Current implemenation points to Kabuto Hashgraph Explorer V.2.
- *
- * @param scheduleId the schedule ID to attempt to find the executed scheduled
- * transaction.
- */
-export async function openScheduledTransactionExplorer(scheduleId: string) {
-	const schedule = ScheduleId.fromString(scheduleId);
-	const scheduleIdAsString = schedule.toString();
-	try {
-		const url =
-			getNetworkId() === NetworkId.Test
-				? `https://v2.api.testnet.kabuto.sh/transaction?filter[entityId]=${scheduleIdAsString}`
-				: `https://v2.api.kabuto.sh/transaction?filter[entityId]=${scheduleIdAsString}`;
-		const transactions = await httpsGetJson(url);
-		if (transactions) {
-			const txHash = transactions.find((tx) => tx['viaScheduleId'] === scheduleIdAsString)?.hash;
-			if (txHash) {
-				const txUrl =
-					getNetworkId() === NetworkId.Test
-						? `https://v2.explorer.kabuto.sh/transaction/${txHash}?network=testnet`
-						: `https://v2.explorer.kabuto.sh/transaction/${txHash}`;
-				electron.shell.openExternal(txUrl);
-				return;
-			}
-		}
-	}
-	catch (fetchError) {		
-		console.error(fetchError);
-	}
-	// If not discovered, navigate to the schedule page instead.
-	await openAddressExplorer(scheduleIdAsString);
-}
-/**
- * Helper function to fetch a JSON object from the
- * Kabuto Exploer API.  It assumes the returned JSON
- * payload has a property "data".  If the property is
- * found, it is returned, otherwise null is returned
- * (or an error if the request failes due to other reasons)
- *
- * @param url url to fetch from the API.
- *
- * @returns an object literal parsed from the JSON
- * payload returned from the server if found, otherwise
- * the value `null`.
- */
-function httpsGetJson(url: string): Promise<any> {
-	return new Promise((resolve, reject) => {
-		https
-			.get(url, (resp) => {
-				let data = '';
-				resp.on('data', (chunk) => {
-					data += chunk;
-				});
-				resp.on('end', () => {
-					try {
-						var rawData = JSON.parse(data);
-						resolve(rawData.data ? rawData.data : null);
-					} catch (err) {
-						reject(err);
-					}
-					resolve(JSON.parse(data));
-				});
-			})
-			.on('error', reject);
-	});
 }

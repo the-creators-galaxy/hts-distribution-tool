@@ -1,4 +1,3 @@
-
 import { proto } from '@hashgraph/proto';
 import { TransactionReceiptQuery } from '@hashgraph/sdk';
 /**

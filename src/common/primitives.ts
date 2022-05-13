@@ -13,6 +13,20 @@ export enum NetworkId {
 	Test = 2,
 }
 /**
+ * Enumerator identifying the network explorer
+ * to attempt to connect to.
+ */
+export enum ExplorerId {
+	/**
+	 * DragonGlass
+	 */
+	DragonGlass = 1,
+	/**
+	 * HashScan.io
+	 */
+	HashScan = 2,
+}
+/**
  * Enumerator identifying the macro stage an individual
  * payment may be in.  There are three ending stage
  * results: scheduled, completed and failed.
