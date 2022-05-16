@@ -4,10 +4,12 @@
     let dialog;    
     let title;    
     let info;
+    let showJson;
    
     export function showDialog(scheduleId: string) {
         title = `Schedule ${scheduleId}`;
         info = null;
+        showJson = false;
         invoke('get-schedule-info', scheduleId).then( value => info = value ); 
         dialog.showModal();
     }
@@ -16,9 +18,13 @@
         dialog.close();
     }
 
-    function onOpenDragonglass() {
-        invoke('open-schedule-explorer', info.scheduleId);
+    function onShowJson() {
+        showJson = true;
     }
+
+    function onShowDetails() {
+        showJson = false;
+    }    
 </script>
 
 <dialog bind:this={dialog}>
@@ -26,7 +32,10 @@
         <button on:click={onClose} class="close-dialog"></button>                
         <h1>{title}</h1>
         <div>
-            {#if info}                
+            {#if info && showJson}         
+                <div class="json">{JSON.stringify(info.raw,null,2)}</div>
+                <div class="action" on:click={onShowDetails}>Show Summary</div>
+            {:else if info}                
                 <h2><span class="network">{info.network}</span></h2>
                 {#if info.error}
                     <div>{info.error}</div>
@@ -44,10 +53,12 @@
                         </ul>
                     {/if}
                 {/if}
-                <div class="lookup">More info on</div>
-                <ul>
-                    <li class="link" on:click={onOpenDragonglass}>DragonGlass</li>
-                </ul>
+                {#if info.raw}
+                    <div class="lookup">More info</div>
+                    <ul>
+                        <li class="action" on:click={onShowJson}>Show Mirror JSON</li>
+                    </ul>
+                {/if}
             {:else}
                 <div>Retrieving current info ...</div>
             {/if}
@@ -60,11 +71,10 @@
         display: grid;
         grid-template-rows: max-content max-content 1fr;
         margin: 0;
-        padding: 0;
+        padding: 0 0 1rem 0;
         width: min(90vw, 28rem);
         min-height: 17rem;
         color: var(--cds-nl-0);
-        overflow: hidden;
     }
     dialog > section > div {
         padding: 0 3rem 1rem 3rem;
@@ -101,11 +111,15 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    li.link {
+    .action {
         cursor: pointer;
     }
-    li.link:active, li.link:focus, li.link:hover {
+    .action:active, .action:focus, .action:hover {
         color: var(--cds-cs-500);
         text-decoration: underline;
+    }
+    .json {
+        white-space: pre;
+        overflow-y: auto;
     }
 </style>

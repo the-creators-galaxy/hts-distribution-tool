@@ -39,9 +39,10 @@ export async function getTransactionInfo(accountId: string, seconds: number, nan
 				txId,
 				...record,
 				network,
+				raw: parsed,
 			};
 		} else {
-			return { txId, error: 'Transaction not found.', network };
+			return { txId, error: 'Transaction not found.', network, raw: parsed };
 		}
 	} catch (err) {
 		const error = err.message || err.toString();
@@ -77,9 +78,10 @@ export async function getAccountInfo(accountId: string): Promise<any> {
 				tokens: record.tokens || [],
 				timestamp,
 				network,
+				raw: parsed,
 			};
 		} else {
-			return { accountId, error: 'Account information not found.', network, timestamp };
+			return { accountId, error: 'Account information not found.', network, timestamp, raw: parsed };
 		}
 	} catch (err) {
 		const error = err.message || err.toString();
@@ -119,9 +121,10 @@ export async function getScheduleInfo(scheduleId: string): Promise<any> {
 				signingKeys,
 				timestamp,
 				network,
+				raw: parsed,
 			};
 		} else {
-			return { scheduleId, error: 'Schedule information not found.', network, timestamp };
+			return { scheduleId, error: 'Schedule information not found.', network, timestamp, raw: parsed };
 		}
 	} catch (err) {
 		const error = err.message || err.toString();

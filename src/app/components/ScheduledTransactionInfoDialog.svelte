@@ -6,10 +6,12 @@
     let dialog;    
     let title;    
     let info;
+    let showJson;
    
     export function showDialog(scheduleId: string, scheduledTx: string) {
         title = `Distribution Transaction ${scheduledTx}`;
         info = null;
+        showJson = false;
         invoke('get-schedule-info', scheduleId).then( scheduleInfo => {
             if(scheduleInfo.error) {
                 info = { error: scheduleInfo.error, network: scheduleInfo.network };
@@ -41,6 +43,14 @@
     function onOpenHashScan() {
         invoke('open-transaction-explorer', info.txId, ExplorerId.HashScan);
     }
+
+    function onShowJson() {
+        showJson = true;
+    }
+
+    function onShowDetails() {
+        showJson = false;
+    }    
 </script>
 
 <dialog bind:this={dialog}>
@@ -48,7 +58,10 @@
         <button on:click={onClose} class="close-dialog"></button>                
         <h1>{title}</h1>
         <div>
-            {#if info}                
+            {#if info && showJson}         
+                <div class="json">{JSON.stringify(info.raw,null,2)}</div>
+                <div class="action" on:click={onShowDetails}>Show Summary</div>
+            {:else if info}                
                 <h2><span class="network">{info.network}</span></h2>
                 {#if info.error}
                     <div>{info.error}</div>
@@ -56,10 +69,13 @@
                     <div>{displayEpochString(info.consensus_timestamp)}</div>
                     <div>{info.name}</div>
                     <div>{info.result}</div>                    
-                    <div class="lookup">More info on</div>
+                    <div class="lookup">More info</div>
                     <ul>
-                        <li on:click={onOpenDragonglass}>DragonGlass</li>
-                        <li on:click={onOpenHashScan}>HashScan</li>
+                        <li class="action" on:click={onOpenDragonglass}>DragonGlass</li>
+                        <li class="action" on:click={onOpenHashScan}>HashScan</li>
+                        {#if info.raw}
+                            <li class="action" on:click={onShowJson}>Show Mirror JSON</li>
+                        {/if}
                     </ul>
                 {/if}
             {:else}
@@ -74,13 +90,15 @@
         display: grid;
         grid-template-rows: max-content max-content 1fr;
         margin: 0;
-        padding: 0;
+        padding: 0 0 1rem 0;
         width: min(90vw, 36rem);
         min-height: 17rem;
         color: var(--cds-nl-0);
     }
     dialog > section > div {
         padding: 0 3rem 1rem 3rem;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
     h1 {
         margin: 0 3rem;
@@ -108,11 +126,15 @@
     ul {
         margin: 0;
     }
-    li {
+    .action {
         cursor: pointer;
     }
-    li:active, li:focus, li:hover {
+    .action:active, .action:focus, .action:hover {
         color: var(--cds-cs-500);
         text-decoration: underline;
     }
-</style>
+    .json {
+        white-space: pre;
+        overflow-y: auto;
+    }
+    </style>

@@ -7,6 +7,7 @@ import { displayEpochString } from "../../common/convert";
     let dialog;    
     let title;    
     let info;
+    let showJson;
    
     export function showDialog(transactionId: string) {
         const [accountId, timestampWithFlags] = transactionId.split('@');
@@ -17,6 +18,7 @@ import { displayEpochString } from "../../common/convert";
         const isScheduled = scheduled === 'scheduled';
         title = `${ isScheduled ? 'Scheduled ' : ''}Transaction ${transactionId}`;
         info = null;
+        showJson = false;
         invoke('get-transaction-info', accountId, seconds, nanos, isScheduled).then( value => info = value );
         dialog.showModal();
     }
@@ -32,6 +34,14 @@ import { displayEpochString } from "../../common/convert";
     function onOpenHashScan() {
         invoke('open-transaction-explorer', info.txId, ExplorerId.HashScan);
     }
+
+    function onShowJson() {
+        showJson = true;
+    }
+
+    function onShowDetails() {
+        showJson = false;
+    }    
 </script>
 
 <dialog bind:this={dialog}>
@@ -39,7 +49,10 @@ import { displayEpochString } from "../../common/convert";
         <button on:click={onClose} class="close-dialog"></button>                
         <h1>{title}</h1>
         <div>
-            {#if info}                
+            {#if info && showJson}         
+                <div class="json">{JSON.stringify(info.raw,null,2)}</div>
+                <div class="action" on:click={onShowDetails}>Show Summary</div>
+            {:else if info}                
                 <h2><span class="network">{info.network}</span></h2>
                 {#if info.error}
                     <div>{info.error}</div>
@@ -48,10 +61,13 @@ import { displayEpochString } from "../../common/convert";
                     <div>{info.name}</div>
                     <div>{info.result}</div>                    
                 {/if}
-                <div class="lookup">More info on</div>
+                <div class="lookup">More info</div>
                 <ul>
-                    <li on:click={onOpenDragonglass}>DragonGlass</li>
-                    <li on:click={onOpenHashScan}>HashScan</li>
+                    <li class="action" on:click={onOpenDragonglass}>DragonGlass</li>
+                    <li class="action" on:click={onOpenHashScan}>HashScan</li>
+                    {#if info.raw}
+                        <li class="action" on:click={onShowJson}>Show Mirror JSON</li>
+                    {/if}
                 </ul>
             {:else}
                 <div>Retrieving current info ...</div>
@@ -65,13 +81,15 @@ import { displayEpochString } from "../../common/convert";
         display: grid;
         grid-template-rows: max-content max-content 1fr;
         margin: 0;
-        padding: 0;
+        padding: 0 0 1rem 0;
         width: min(90vw, 36rem);
         min-height: 17rem;
         color: var(--cds-nl-0);
     }
     dialog > section > div {
         padding: 0 3rem 1rem 3rem;
+        overflow-x: hidden;
+        overflow-y: auto;
     }
     h1 {
         margin: 0 3rem;
@@ -99,11 +117,15 @@ import { displayEpochString } from "../../common/convert";
     ul {
         margin: 0;
     }
-    li {
+    .action {
         cursor: pointer;
     }
-    li:active, li:focus, li:hover {
+    .action:active, .action:focus, .action:hover {
         color: var(--cds-cs-500);
         text-decoration: underline;
+    }
+    .json {
+        white-space: pre;
+        overflow-y: auto;
     }
 </style>
