@@ -1,27 +1,16 @@
 <script lang="ts">
+	import AddSignatoryDialog from "./AddSignatoryDialog.svelte";
     import type { Signatory } from "../../common/primitives";
-    import { invoke } from "../common/ipc";
 
-    let privateKey: string;
+	let addSignatoryDialog: AddSignatoryDialog;
     
     export let signatories:Signatory[];
 
 	async function clickAddPrivateKey() {
-		if(privateKey) {
-			try
-			{
-            	const key = await invoke('validate-private-key', privateKey);
-				if(key && !signatories.find(k => k.publicKey === key.publicKey)) {
-					signatories.push(key);
-					signatories = signatories;
-					privateKey = '';					
-				}
-			}
-			catch
-			{
-				// Key management will change so this portion
-				// is not implemented at this time.
-			}
+		const signatory = await addSignatoryDialog.tryGetSignatory();
+		if(signatory && !signatories.find(k => k.publicKey === signatory.publicKey)) {
+			signatories.push(signatory);
+			signatories = signatories;
 		}
 	}
 
@@ -33,13 +22,18 @@
 
 <div class="keylist">
     {#if signatories}
-        {#each signatories as {publicKey}, index}
-            <div class="read-only-input">{publicKey}</div>
+        {#each signatories as {keyType, publicKey}, index}
+            <div class="read-only-input"><span class="keytype">{keyType}</span> {publicKey}</div>
             <button on:click={() => clickRemovePrivateKey(index)} class="remove-item"></button>
         {/each}
     {/if}
-    <input type="text" bind:value={privateKey} name="privateKey" placeholder="E.g. 302e020100300506032b657004220420&mldr;"/>
+	{#if signatories && signatories.length > 0}
+    	<div></div>
+	{:else}
+		<div class="empty">No Keys in list</div>
+	{/if}
     <button on:click={clickAddPrivateKey} class="add-item"></button>
+	<AddSignatoryDialog bind:this={addSignatoryDialog}/>
 </div>
 
 <style>
@@ -50,5 +44,15 @@
 		grid-template-columns: 1fr max-content;
 		column-gap: 1rem;
 		row-gap: 1.25rem;
+		align-items: center;
+	}
+	span.keytype {
+		color: var(--cds-nl-700);
+		margin-right: 0.5em;
+	}
+	div.empty {
+		color: var(--cds-nl-700);
+		font-size: 0.8rem;
+		padding: 0 1rem;
 	}
 </style>

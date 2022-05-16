@@ -117,7 +117,7 @@
         justify-self: end;        
         margin: 1rem 1rem 0 0;
     }
-	.network, i {
+	.network {
 		color: var(--cds-cs-500);
 	}
     .lookup {

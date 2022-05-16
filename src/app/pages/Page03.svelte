@@ -79,7 +79,7 @@
 			</h2>
 			<label for="tokenTreasury">Token treasury account id</label>
 			<input type="text" bind:value={treasuryInfo.tokenTreasury} name="tokenTreasury" placeholder="E.g. 0.0.456"/>
-			<label for="treasurySignatories">Treasury private keys(s) (optional)</label>
+			<label for="treasurySignatories">Treasury keys(s) <span>(optional, showing public)</span></label>
 			<SignatoriesList bind:signatories={treasuryInfo.treasurySignatories}></SignatoriesList>
 		</fieldset>
 		<fieldset>
@@ -92,7 +92,7 @@
 			</h2>
 			<label for="submitPayer">Scheduling payer account id</label>
 			<input type="text" bind:value={treasuryInfo.submitPayer} name="submitPayer" placeholder="E.g. 0.0.789"/>
-			<label for="submitPayerSignatories">Scheduling payer private keys(s)</label>
+			<label for="submitPayerSignatories">Scheduling payer keys(s) <span>(showing public)</span></label>
 			<SignatoriesList bind:signatories={treasuryInfo.submitPayerSignatories}></SignatoriesList>
 		</fieldset>
 		<fieldset>
@@ -105,7 +105,7 @@
 			</h2>
 			<label for="transferPayer">Distribution payer account id</label>
 			<input type="text" bind:value={treasuryInfo.transferPayer} name="transferPayer" placeholder="E.g. 0.0.321"/>
-			<label for="transferPayerSignatories">Distribution payer private keys(s) (optional)</label>
+			<label for="transferPayerSignatories">Distribution payer keys(s) <span>(optional, showing public)</span></label>
 			<SignatoriesList bind:signatories={treasuryInfo.transferPayerSignatories}></SignatoriesList>
 		</fieldset>
 	</section>
@@ -159,5 +159,9 @@
 	}
 	b, i {
 		color: var(--cds-cs-500);
+	}
+	label > span {
+		color: var(--cds-nl-700);
+		font-weight: 100;
 	}
 </style>

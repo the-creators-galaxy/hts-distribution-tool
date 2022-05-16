@@ -1,5 +1,5 @@
 import { proto } from '@hashgraph/proto';
-import { TransactionReceiptQuery } from '@hashgraph/sdk';
+import { Status, TransactionReceiptQuery } from '@hashgraph/sdk';
 /**
  * An altered version of the `TransactionReceiptQuery` that
  * does not retry the query if the network responds with
@@ -9,14 +9,14 @@ import { TransactionReceiptQuery } from '@hashgraph/sdk';
  * scheduled transactions.
  */
 export class TryGetTransactionReceiptQuery extends TransactionReceiptQuery {
-	_shouldRetry(request: any, response: any) {
-		const result = super._shouldRetry(request, response);
+	_shouldRetry(request: proto.IQuery, response: proto.IResponse): [Status, string] {
+		const [status, result] = super._shouldRetry(request, response);
 		if (result === 'Retry') {
 			const { nodeTransactionPrecheckCode } = this._mapResponseHeader(response);
 			if (nodeTransactionPrecheckCode === proto.ResponseCodeEnum.RECEIPT_NOT_FOUND) {
-				return 'Error';
+				return [status, 'Error'];
 			}
 		}
-		return result;
+		return [status, result];
 	}
 }

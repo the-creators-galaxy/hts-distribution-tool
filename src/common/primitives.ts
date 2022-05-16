@@ -111,17 +111,25 @@ export enum PaymentStep {
 	Finished = 4,
 }
 /**
+ * Represents the key type
+ */
+export type KeyType = 'ED25519' | 'secp256k1';
+/**
  * Object containing Hex Encoded String representations of
- * an ED25519 private key with its corresponding public key
- * (typically for display purposes).
+ * an ED25519 or ECDSA private key with its corresponding
+ * public key (typically for display purposes).
  */
 export interface Signatory {
 	/**
-	 * Private ED25519 ANS.1 Hex value.
+	 * Type of key this signatory represents.
+	 */
+	keyType: KeyType;
+	/**
+	 * Private Key in Hex value.
 	 */
 	privateKey: string;
 	/**
-	 * Public ED25519 ANS.1 Hex value matching
+	 * Public Key in Hex value matching
 	 * the private key value.
 	 */
 	publicKey: string;
