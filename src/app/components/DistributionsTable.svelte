@@ -1,9 +1,17 @@
 <script lang="ts">
-import { PaymentStage, PaymentStep } from "../../common/primitives";
-
-    import { invoke } from "../common/ipc";
+    import { PaymentStage, PaymentStep } from "../../common/primitives";
+    import AccountInfoDialog from "./AccountInfoDialog.svelte";
+    import ScheduleInfoDialog from "./ScheduleInfoDialog.svelte";
+    import TransactionInfoDialog from "./TransactionInfoDialog.svelte";
+    import ScheduledTransactionInfoDialog from "./ScheduledTransactionInfoDialog.svelte";
 
     export let payments: any[];
+
+    let accountInfoDialog: AccountInfoDialog;
+    let scheduleInfoDialog: ScheduleInfoDialog;
+    let transactionInfoDialog: TransactionInfoDialog;
+    let scheduledTransactionInfoDialog: ScheduledTransactionInfoDialog;
+
 
     // this is a little more complex than otherwise
     // would usually create, we don't have to have 
@@ -20,13 +28,13 @@ import { PaymentStage, PaymentStep } from "../../common/primitives";
                     const payment = payments[index-1];
                     if(payment) {
                         if(cellType === 'address') {
-                            await invoke('open-address-explorer',payment.account);
+                            accountInfoDialog.showDialog(payment.account);
                         } else if(cellType === 'schedule') {
-                            await invoke('open-address-explorer',payment.scheduleId);
+                            scheduleInfoDialog.showDialog(payment.scheduleId);
                         } else if(cellType === 'scheduling-tx') {
-                            await invoke('open-transaction-explorer', payment.schedulingTx);
+                            transactionInfoDialog.showDialog(payment.schedulingTx);
                         } else if(cellType === 'scheduled-tx') {
-                            await invoke('open-scheduled-transaction-explorer', payment.scheduleId);
+                            scheduledTransactionInfoDialog.showDialog(payment.scheduleId, payment.scheduledTx);
                         }
                     }
                 }
@@ -88,6 +96,10 @@ import { PaymentStage, PaymentStep } from "../../common/primitives";
         </tr>
         {/each}
     </table>
+    <AccountInfoDialog bind:this={accountInfoDialog}/>
+    <ScheduleInfoDialog bind:this={scheduleInfoDialog}/>
+    <TransactionInfoDialog bind:this={transactionInfoDialog}/>
+    <ScheduledTransactionInfoDialog bind:this={scheduledTransactionInfoDialog}/>
 </div>
 <style>
     div.container {

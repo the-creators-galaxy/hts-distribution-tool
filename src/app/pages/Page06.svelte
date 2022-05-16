@@ -7,7 +7,7 @@
 	import DistributionsTable from '../components/DistributionsTable.svelte';
 	import ErrorsTable from '../components/ErrorsTable.svelte';
 	import PagingController from '../components/PagingController.svelte';
-import { PaymentStage } from '../../common/primitives';
+	import { PaymentStage } from '../../common/primitives';
 
 	let selectedTab = 0;
 	let results = null;
