@@ -118,8 +118,9 @@ export async function recoverFunds(accountInfo: any) {
 export function privateKeytoSignatory(privateKey: PrivateKey): Signatory {
 	const publicKey = privateKey.publicKey;
 	return {
-		privateKey: '302e020100300506032b657004220420' + Buffer.from(privateKey.toBytes()).toString('hex'),
-		publicKey: '302a300506032b6570032100' + Buffer.from(publicKey.toBytes()).toString('hex'),
+		keyType: 'ED25519',
+		privateKey: Buffer.from(privateKey.toBytes()).toString('hex'),
+		publicKey: Buffer.from(publicKey.toBytes()).toString('hex'),
 	};
 }
 

@@ -1,5 +1,5 @@
 import { PrivateKey } from '@hashgraph/cryptography';
-import type { Signatory } from '../common/primitives';
+import type { KeyType, Signatory } from '../common/primitives';
 /**
  * Validates a user entered ED25519 ANS.1 Hex encoded private key,
  * returning a promise for a Signatory structure holding hex encoded
@@ -20,12 +20,17 @@ import type { Signatory } from '../common/primitives';
  * an error message explaining why the value is invalid.
  */
 export function validatePrivateKey(value: string): Promise<Signatory> {
+	value = value ? value.trim() : '';
+	if (!value) {
+		throw 'Not recognized as a private key or seed phrase.';
+	}
 	try {
 		const privateKey = PrivateKey.fromString(value);
 		const publicKey = privateKey.publicKey;
 		return Promise.resolve({
-			privateKey: '302e020100300506032b657004220420' + Buffer.from(privateKey.toBytes()).toString('hex'),
-			publicKey: '302a300506032b6570032100' + Buffer.from(publicKey.toBytes()).toString('hex'),
+			keyType: privateKey._type as KeyType,
+			privateKey: Buffer.from(privateKey.toBytes()).toString('hex'),
+			publicKey: Buffer.from(publicKey.toBytes()).toString('hex'),
 		});
 	} catch (err) {
 		return Promise.reject(err.message || err.toString());

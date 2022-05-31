@@ -414,6 +414,27 @@ button.close-dialog:focus {
 	box-shadow: inset 0 0 0 3px var(--cds-ct-900), inset 0 0 0 4px var(--cds-ct-400);
 }
 
+button.paste-from-clipboard {
+	width: 2.5rem;
+	height: 3rem;
+	border-radius: 0.375rem;		
+	background-color: transparent;
+	background-image: url(paper-up-arrow-white.svg);
+	background-repeat: no-repeat;
+	background-size: contain;
+	background-position: center;
+	margin: 0;
+	padding: 0;
+}
+
+button.paste-from-clipboard:hover {
+	background-color: var(--cds-nd-500);
+}
+
+button.paste-from-clipboard:focus {
+	box-shadow: inset 0 0 0 3px var(--cds-cs-900), inset 0 0 0 4px var(--cds-cs-200);
+}
+
 footer > button {
 	font-size: 1.125rem;
 	line-height: 1.125rem;

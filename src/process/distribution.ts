@@ -17,7 +17,15 @@ import {
 } from '@hashgraph/sdk';
 import type AccountBalance from '@hashgraph/sdk/lib/account/AccountBalance';
 import { BigNumber } from 'bignumber.js';
-import type { CsvDataSummary, CsvParseError, DistributionPlanSummary, DistributionResult, Signatory, TreasuryInfo } from '../common/primitives';
+import type {
+	CsvDataSummary,
+	CsvParseError,
+	DistributionPlanSummary,
+	DistributionResult,
+	KeyType,
+	Signatory,
+	TreasuryInfo,
+} from '../common/primitives';
 import { NetworkId, PaymentStage, PaymentStep } from '../common/primitives';
 import { CalaxyClient } from './client/client';
 import { runClientsConcurrently } from './client/concurrent';
@@ -412,7 +420,13 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 		let result = [];
 		for (var signatory of values) {
 			try {
-				result.push(PrivateKey.fromString(signatory.privateKey));
+				if (signatory.keyType === 'ED25519') {
+					result.push(PrivateKey.fromStringED25519(signatory.privateKey));
+				} else if (signatory.keyType === 'secp256k1') {
+					result.push(PrivateKey.fromStringECDSA(signatory.privateKey));
+				} else {
+					result.push(PrivateKey.fromString(signatory.privateKey));
+				}
 			} catch (err) {
 				tokenInfoErrors.push(`Invalid ${description}: ${err.message || err.toString()}`);
 				return null;
@@ -1153,8 +1167,9 @@ async function getReachableClientList(): Promise<CalaxyClient[]> {
 function privateKeysToSignatories(privateKeys: PrivateKey[]): Signatory[] {
 	return (privateKeys || []).map((pKey) => {
 		return {
-			privateKey: '302e020100300506032b657004220420' + Buffer.from(pKey.toBytes()).toString('hex'),
-			publicKey: '302a300506032b6570032100' + Buffer.from(pKey.publicKey.toBytes()).toString('hex'),
+			keyType: pKey._key._type as KeyType,
+			privateKey: Buffer.from(pKey.toBytes()).toString('hex'),
+			publicKey: Buffer.from(pKey.publicKey.toBytes()).toString('hex'),
 		};
 	});
 }
