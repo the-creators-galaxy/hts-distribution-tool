@@ -63,15 +63,17 @@
 
 <div class="container" on:click={handleClick}>
     <table>
-        <tr>
-            <th>No.</th>
-            <th>Account</th>
-            <th>Amount</th>
-            <th>Distribution ID</th>
-            <th>Distribution Status</th>
-            <th>Scheduling Transaction</th>
-            <th>Distribution Transaction</th>
-        </tr>
+        <thead>
+            <tr>
+                <th>No.</th>
+                <th>Account</th>
+                <th>Amount</th>
+                <th>Distribution ID</th>
+                <th>Distribution Status</th>
+                <th>Scheduling Transaction</th>
+                <th>Distribution Transaction</th>
+            </tr>
+        </thead>
         {#each payments as { index, account, amount, stage, step, schedulingTx, scheduledTx, scheduleId }, rowNo}
         <tr data-rowno={rowNo+1}>
             <td>{index}</td>

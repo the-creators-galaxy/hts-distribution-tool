@@ -2,7 +2,9 @@
   "extends": "@tsconfig/svelte/tsconfig.json",
   "compilerOptions": {
     "target": "es2020",
-    "moduleResolution": "node"
+    "moduleResolution": "node",
+    "noImplicitAny": false,
+    "strictNullChecks": false
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules/*", "__sapper__/*", "public/*"]

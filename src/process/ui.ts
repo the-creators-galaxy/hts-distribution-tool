@@ -1,4 +1,4 @@
-import { AccountId, ScheduleId, TransactionId } from '@hashgraph/sdk';
+import { AccountId, ScheduleId } from '@hashgraph/sdk';
 import electron, { app, BrowserWindow, dialog } from 'electron';
 import { homedir } from 'os';
 import { ExplorerId, NetworkId } from '../common/primitives';

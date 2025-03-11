@@ -45,8 +45,49 @@ export async function getTransactionInfo(accountId: string, seconds: number, nan
 			return { txId, error: 'Transaction not found.', network, raw: parsed };
 		}
 	} catch (err) {
-		const error = err.message || err.toString();
+		const error = (err as Error).message || err.toString();
 		return { txId, error, network };
+	}
+}
+/**
+ * Retrieves the distribution token balance for an  account from a mirror node.
+ *
+ * @param accountId the account id in shard.realm.num format.
+ *
+ * @param tokkenId the token id in shard.realm.num format.
+ *
+ * @returns an object literal structure representing the details
+ * of the balance as returned by the remote mirror node.
+ */
+export async function getAccountTokenBalance(accountId: string, tokenId: string) {
+	const network = getNetworkId() === NetworkId.Test ? 'Testnet' : 'Mainnet';
+	const options = {
+		hostname: getMirrorHostname(),
+		path: `/api/v1/accounts/${accountId}/tokens?token.id=${tokenId}`,
+		method: 'GET',
+		agent,
+	};
+	try {
+		const data = await executeRequestWithRetry(options);
+		const parsed = JSON.parse(data.toString('ascii'));
+		const timestamp = parsed.timestamp ? displayEpochString(parsed.timestamp) : null;
+		const record = parsed.tokens ? parsed.tokens.find((b) => b.token_id === tokenId) : null;
+		if (record) {
+			return {
+				accountId,
+				tokenId,
+				balance: record.balance,
+				decimals: record.decimals,
+				timestamp,
+				network,
+				raw: parsed,
+			};
+		} else {
+			return { accountId, tokenId, error: 'Account does not hold token.', network, timestamp, raw: parsed };
+		}
+	} catch (err: any) {
+		const error = (err as Error).message || err.toString();
+		return { accountId, tokenId, error, network };
 	}
 }
 /**
@@ -84,7 +125,7 @@ export async function getAccountInfo(accountId: string): Promise<any> {
 			return { accountId, error: 'Account information not found.', network, timestamp, raw: parsed };
 		}
 	} catch (err) {
-		const error = err.message || err.toString();
+		const error = (err as Error).message || err.toString();
 		return { accountId, error, network };
 	}
 }
@@ -127,7 +168,7 @@ export async function getScheduleInfo(scheduleId: string): Promise<any> {
 			return { scheduleId, error: 'Schedule information not found.', network, timestamp, raw: parsed };
 		}
 	} catch (err) {
-		const error = err.message || err.toString();
+		const error = (err as Error).message || err.toString();
 		return { scheduleId, error, network };
 	}
 }

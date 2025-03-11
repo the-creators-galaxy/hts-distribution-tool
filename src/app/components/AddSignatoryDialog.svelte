@@ -17,7 +17,7 @@
             invoke('validate-private-key', privateKeyHex.trim()).then(sig => {
                 signatory = sig;
             }, err =>{
-                error = err.message || err.toString();
+                error = (err as Error).message || err.toString();
             });
         }
     }
@@ -59,7 +59,7 @@
         <div>
             <div class="input-key">
                 <input type="text" bind:value={privateKeyHex} name="privateKey" placeholder="E.g. 302e020100300506032b657004220420&mldr;"/>
-                <button class="paste-from-clipboard" on:click={onPaste} />
+                <button class="paste-from-clipboard" on:click={onPaste} ></button>
             </div>        
             {#if error}
                 <div class="message error">{error}</div>

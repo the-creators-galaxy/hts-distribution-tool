@@ -3,7 +3,6 @@ import { parse } from 'csv-parse';
 import { AccountId } from '@hashgraph/sdk';
 import { BigNumber } from 'bignumber.js';
 import type { CsvParseError } from '../common/primitives';
-import type AccountBalance from '@hashgraph/sdk/lib/account/AccountBalance';
 /**
  * Represents a distribution request, including some balance metadata if it can be found.
  */
@@ -24,7 +23,7 @@ export interface Distribution {
 	 * The current account balance for the crypto account
 	 * retrieved from the hedera network.
 	 */
-	balances?: AccountBalance;
+	tokenBalance?: Number;
 }
 /**
  * Summary results from parsing the original distribution CSV file.
@@ -145,7 +144,7 @@ export async function loadAndParseCsvDistributionFile(filename: string): Promise
 							errors.push({
 								line: rows,
 								column: 1,
-								description: `Unable to parse Account ID: ${err.message || err}`,
+								description: `Unable to parse Account ID: ${(err as Error).message || err}`,
 							});
 							return items;
 						}
@@ -172,7 +171,7 @@ export async function loadAndParseCsvDistributionFile(filename: string): Promise
 							errors.push({
 								line: rows,
 								column: 2,
-								description: `Unable to parse amount of distribution: ${err.message || err}`,
+								description: `Unable to parse amount of distribution: ${(err as Error).message || err}`,
 							});
 							return items;
 						}

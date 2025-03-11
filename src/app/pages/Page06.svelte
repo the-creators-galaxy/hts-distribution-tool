@@ -30,7 +30,7 @@
 		} catch(err) {
 			results = {
 				payments: [],
-				errors: [(err.message || err.toString())]
+				errors: [((err as Error).message || err.toString())]
 			};
 		}
 		for(let payment of results.payments) {
@@ -58,7 +58,7 @@
 			try {
 				await invoke('save-results-output-file', filename);
 			} catch(err) {
-				alert(`Sorry, an unexpected error occurred: ${err.message || JSON.stringify(err)}`);
+				alert(`Sorry, an unexpected error occurred: ${(err as Error).message || JSON.stringify(err)}`);
 			}
 		}
 		saving = false;

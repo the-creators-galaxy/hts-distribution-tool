@@ -28,7 +28,7 @@
 		try {
 			$appVersion = await invoke('get-app-version');
 		} catch(err) {
-			console.error(`Unable to determine the application version: ${err.message || JSON.stringify(err)}`);
+			console.error(`Unable to determine the application version: ${(err as Error).message || JSON.stringify(err)}`);
 		}
 	});	
 

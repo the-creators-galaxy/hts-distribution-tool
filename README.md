@@ -27,7 +27,7 @@ This is a developer tool utilized to facilitate the distribution of tokens that 
 
 1. `git clone https://github.com/the-creators-galaxy/hts-distribution-tool.git`
 2. `cd hts-distribution-tool`
-3. `npm install`
+3. `npm ci`
 
 #### Running the project
 
@@ -63,7 +63,7 @@ This tool reads in a `.csv` file of Hedera accounts & distribution quantities fo
 
 ## Authors
 
-[Jason Fabritz](mailto:jason@calaxy.com)
+[Jason Fabritz](mailto:hashgraph@bugbytes.com)
 
 ## License
 

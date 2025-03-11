@@ -2,10 +2,10 @@ import svelte from 'rollup-plugin-svelte';
 import commonjs from '@rollup/plugin-commonjs';
 import resolve from '@rollup/plugin-node-resolve';
 import livereload from 'rollup-plugin-livereload';
-import { terser } from 'rollup-plugin-terser';
 import sveltePreprocess from 'svelte-preprocess';
 import typescript from '@rollup/plugin-typescript';
 import css from 'rollup-plugin-css-only';
+import {spawn} from 'child_process';
 
 const production = !process.env.ROLLUP_WATCH;
 
@@ -19,7 +19,7 @@ function serve() {
 	return {
 		writeBundle() {
 			if (server) return;
-			server = require('child_process').spawn('npm', ['run', 'start', '--', '--dev'], {
+			server = spawn('npm', ['run', 'start', '--', '--dev'], {
 				stdio: ['ignore', 'inherit', 'inherit'],
 				shell: true
 			});
@@ -43,7 +43,6 @@ export default [{
 			sourceMap: !production,
 			inlineSources: !production
 		}),
-		production && terser()
 	],
 	external: ['electron'],
 	watch: {
@@ -63,7 +62,6 @@ export default [{
 			sourceMap: !production,
 			inlineSources: !production
 		}),
-		production && terser()
 	],
 	external: ['electron', 'os', 'fs', 'csv-parse', 'csv-stringify', 'worker_threads', 'https', '@hashgraph/sdk', '@hashgraph/cryptography', '@hashgraph/proto', 'bignumber.js'],
 	watch: {
@@ -82,7 +80,6 @@ export default [{
 			sourceMap: !production,
 			inlineSources: !production
 		}),
-		production && terser()
 	],
 	external: ['worker_threads'],
 	watch: {
@@ -129,10 +126,6 @@ export default [{
 		// Watch the `public` directory and refresh the
 		// browser on changes when not in production
 		!production && livereload('public'),
-
-		// If we're building for production (npm run build
-		// instead of npm run dev), minify
-		production && terser()
 	],
 	watch: {
 		clearScreen: false

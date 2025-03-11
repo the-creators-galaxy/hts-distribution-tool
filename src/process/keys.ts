@@ -33,6 +33,6 @@ export function validatePrivateKey(value: string): Promise<Signatory> {
 			publicKey: Buffer.from(publicKey.toBytes()).toString('hex'),
 		});
 	} catch (err) {
-		return Promise.reject(err.message || err.toString());
+		return Promise.reject((err as Error).message || err.toString());
 	}
 }

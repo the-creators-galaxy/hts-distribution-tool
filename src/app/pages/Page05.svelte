@@ -13,7 +13,7 @@
 		try {
 			await invoke('execute-distribution-plan', handleProgressUpdate);
 		} catch(err) {
-			alert(err.message || err.toString())
+			alert((err as Error).message || err.toString())
 		}
 		$page = Pages.page06;
 		

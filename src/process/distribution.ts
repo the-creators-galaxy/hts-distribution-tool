@@ -2,7 +2,6 @@ import * as fs from 'fs';
 import { Worker } from 'worker_threads';
 import { stringify } from 'csv-stringify';
 import {
-	AccountBalanceQuery,
 	AccountId,
 	PrivateKey,
 	ScheduleCreateTransaction,
@@ -15,7 +14,6 @@ import {
 	TransactionReceipt,
 	TransferTransaction,
 } from '@hashgraph/sdk';
-import type AccountBalance from '@hashgraph/sdk/lib/account/AccountBalance';
 import { BigNumber } from 'bignumber.js';
 import type {
 	CsvDataSummary,
@@ -35,6 +33,7 @@ import { TryGetTransactionReceiptQuery } from './client/try-get-transaction-rece
 import type { TxResponse } from './client/tx-response';
 import type { Distribution } from './csv';
 import { loadAndParseCsvDistributionFile } from './csv';
+import { getAccountInfo, getAccountTokenBalance } from './mirror';
 /**
  * Enumerates the various in-flight states of distribution
  * processing for an individual payment.
@@ -402,7 +401,7 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 		try {
 			return AccountId.fromString(value);
 		} catch (err) {
-			tokenInfoErrors.push(`Invalid ${description}: ${err.message || err.toString()}`);
+			tokenInfoErrors.push(`Invalid ${description}: ${(err as Error).message || err.toString()}`);
 			return null;
 		}
 	}
@@ -411,7 +410,7 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 		try {
 			return TokenId.fromString(value);
 		} catch (err) {
-			tokenInfoErrors.push(`Invalid ${description}: ${err.message || err.toString()}`);
+			tokenInfoErrors.push(`Invalid ${description}: ${(err as Error).message || err.toString()}`);
 			return null;
 		}
 	}
@@ -428,7 +427,7 @@ export function setTreasuryInformation(info: TreasuryInfo): Promise<void> {
 					result.push(PrivateKey.fromString(signatory.privateKey));
 				}
 			} catch (err) {
-				tokenInfoErrors.push(`Invalid ${description}: ${err.message || err.toString()}`);
+				tokenInfoErrors.push(`Invalid ${description}: ${(err as Error).message || err.toString()}`);
 				return null;
 			}
 		}
@@ -465,7 +464,7 @@ export async function generateDistributionPlan(progress: (any) => void): Promise
 			verifyTreasuryTokenBalance();
 		}
 	} catch (err) {
-		preGenerationErrors.push(err.message || err.toString());
+		preGenerationErrors.push((err as Error).message || err.toString());
 	}
 	return {
 		errors: preGenerationErrors,
@@ -512,88 +511,47 @@ export async function generateDistributionPlan(progress: (any) => void): Promise
 	async function confirmAccountsExist(): Promise<boolean> {
 		let checkedBalanceCount = 0;
 		progress(`Verifying treasury and paying accounts ...`);
-		const subitBalances = await getSourceAccountBalances(submitPayerId, 'Scheduling Payer Account');
-		const transferBalances = await getSourceAccountBalances(transferPayerId, 'Transfer Payer Account');
-		const treasuryBalances = await getSourceAccountBalances(tokenTreasuryId, 'Treasury Account');
-		if (!subitBalances || !transferBalances || !treasuryBalances) {
+		const schedulingPayerAccountInfo = await getAccountInfo(submitPayerId.toString());
+		if (schedulingPayerAccountInfo.error) {
+			preGenerationErrors.push(`Problem with Scheduling Payer Account ${submitPayerId.toString()}, ${schedulingPayerAccountInfo.error}.`);
+		}
+		const transferPayerAccountInfo = await getAccountInfo(transferPayerId.toString());
+		if (transferPayerAccountInfo.error) {
+			preGenerationErrors.push(`Problem with Transfer Payer Account ${transferPayerId.toString()}, ${transferPayerAccountInfo.error}.`);
+		}
+		const treasuryAccountInfo = await getAccountInfo(tokenTreasuryId.toString());
+		if (treasuryAccountInfo.error) {
+			preGenerationErrors.push(`Problem with Treasury Account ${tokenTreasuryId.toString()}, ${treasuryAccountInfo.error}.`);
+			return false;
+		}
+		const treasuryAccountTokenBalanceInfo = await getAccountTokenBalance(tokenTreasuryId.toString(), tokenId.toString());
+		if (treasuryAccountTokenBalanceInfo.error) {
+			preGenerationErrors.push(`Problem with Treasury Account Balance, ${treasuryAccountTokenBalanceInfo.error}.`);
+		}
+		if (schedulingPayerAccountInfo.error || transferPayerAccountInfo.error || treasuryAccountInfo.error || treasuryAccountTokenBalanceInfo.error) {
 			// No point in spending the time verifying recipients yet.
 			return false;
 		}
-		const treasuryTokenBalanceAsLong = treasuryBalances.tokens.get(tokenId);
-		if (!treasuryTokenBalanceAsLong) {
-			preGenerationErrors.push(`Treasury Account ${tokenTreasuryId.toString()} does not hold the token ${tokenId.toString()}.`);
-			return false;
-		} else {
-			tokenTreasuryBalance = new BigNumber(treasuryTokenBalanceAsLong.toString(10));
-			tokenDecimals = treasuryBalances.tokenDecimals.get(tokenId);
-		}
+		tokenTreasuryBalance = new BigNumber(treasuryAccountTokenBalanceInfo.balance);
+		tokenDecimals = treasuryAccountTokenBalanceInfo.decimals;
 		distributions
 			.filter((distribution) => tokenTreasuryId.equals(distribution.account))
 			.forEach((distribution) => {
 				preGenerationErrors.push(`Distribution account ${distribution.account} is the same address as the treasury.`);
 			});
-		await runClientsConcurrently(clients, distributions, getReceivingAccountBalance);
+		for (const distribution of distributions) {
+			const balanceInfo = await getAccountTokenBalance(distribution.account.toString(), tokenId.toString());
+			if (balanceInfo.error) {
+				preGenerationWarnings.push(`Receiving account ${distribution.account.toString()} will be excluded: ${balanceInfo.error}`);
+				distribution.tokenBalance = null;
+			} else {
+				distribution.tokenBalance = balanceInfo.balance;
+			}
+			checkedBalanceCount = checkedBalanceCount + 1;
+			progress(`Checking ${checkedBalanceCount} of ${distributions.length} distribution accounts.`);
+		}
 		progress('Done Retrieving Accounts Information.');
 		return true;
-		/**
-		 * Queries the balances of all the identified accounts to ensure that they exist
-		 * and receiving accounts are associated with the token.  Depending on the size
-		 * of the distribution list, this may take some time.  Reports back intermediate
-		 * progress for each distribution account examined. Multiple invocations of this
-		 * method are run concurrently over multiple hedera node clients.  Annotates the
-		 * record with the balance results.
-		 *
-		 * @param client The hedera network node client to use to make the query.
-		 * @param distribution The individual distribution record to update.
-		 * @returns A promise indicating the perceived health of the remote hedera node.
-		 * Healthy indicates no throttling, if there appeared to be throttling,
-		 * Throttling is returned.  If there are problematic performance issues, Unhealthy
-		 * is returned, the calling coordinator will stop using the associated remote
-		 * node for a period of time and rely on other more healthy nodes.
-		 */
-		async function getReceivingAccountBalance(client: CalaxyClient, distribution: Distribution): Promise<NodeHealth> {
-			const { response, nodeHealth, error } = await client.executeQuery(() =>
-				Promise.resolve(new AccountBalanceQuery().setAccountId(distribution.account)),
-			);
-			if (nodeHealth !== NodeHealth.Unhealthy) {
-				if (error) {
-					if (error instanceof StatusError && error.status === Status.InvalidAccountId) {
-						preGenerationWarnings.push(`Receiving account at ${distribution.account.toString()} does not exist.`);
-					} else {
-						preGenerationWarnings.push(
-							`${distribution.account.toString()} will be excluded from the distribution, Unable to verify it exists: ${
-								error.message || error.toString()
-							}`,
-						);
-					}
-				} else {
-					distribution.balances = response;
-				}
-				checkedBalanceCount = checkedBalanceCount + 1;
-				progress(`Checking ${checkedBalanceCount} of ${distributions.length} distribution accounts.`);
-			}
-			return nodeHealth;
-		}
-		/**
-		 * Retrieves the balances of the identified accounts.
-		 *
-		 * @param accountId Crypto account to query.
-		 * @param description Description of the account for error reporting purposes (if required).
-		 * @returns The account balance information queried from the hedera network.
-		 */
-		async function getSourceAccountBalances(accountId: AccountId, description: string): Promise<AccountBalance> {
-			const { response, error } = await clients[0].executeQuery(() => Promise.resolve(new AccountBalanceQuery().setAccountId(accountId)));
-			if (error) {
-				if (error instanceof StatusError && error.status === Status.InvalidAccountId) {
-					preGenerationErrors.push(`${description} at ${accountId.toString()} does not exist.`);
-				} else {
-					preGenerationErrors.push(`Unable to verify ${description} at ${accountId.toString()}: ${error.message || error.toString()}`);
-				}
-				return null;
-			} else {
-				return response;
-			}
-		}
 	}
 	/**
 	 * Computes the sum of distribution payments for this run and compares the
@@ -604,21 +562,18 @@ export async function generateDistributionPlan(progress: (any) => void): Promise
 	function verifyTreasuryTokenBalance() {
 		progress(`Reviewing Distribution Amounts ...`);
 		for (const distribution of distributions) {
-			if (distribution.balances) {
-				const tokenBalance = distribution.balances.tokens.get(tokenId);
-				if (tokenBalance === null) {
-					preGenerationWarnings.push(
-						`Account ${distribution.account.toString()} does not appear to be associated with this token, if the account has not enabled auto-association, this distribuiton can fail.`,
-					);
-				}
-				if (distribution.amount.decimalPlaces() > tokenDecimals) {
-					preGenerationErrors.push(
-						`Distribution account ${distribution.account.toString()} amount decimal places exceed token decimal places of ${tokenDecimals}.`,
-					);
-				} else {
-					distribution.amountInTinyToken = distribution.amount.shiftedBy(tokenDecimals);
-					totalTransfers = totalTransfers.plus(distribution.amountInTinyToken);
-				}
+			if (distribution.tokenBalance === null) {
+				preGenerationWarnings.push(
+					`Account ${distribution.account.toString()} does not appear to be associated with this token, if the account has not enabled auto-association, this distribuiton can fail.`,
+				);
+			}
+			if (distribution.amount.decimalPlaces() > tokenDecimals) {
+				preGenerationErrors.push(
+					`Distribution account ${distribution.account.toString()} amount decimal places exceed token decimal places of ${tokenDecimals}.`,
+				);
+			} else {
+				distribution.amountInTinyToken = distribution.amount.shiftedBy(tokenDecimals);
+				totalTransfers = totalTransfers.plus(distribution.amountInTinyToken);
 			}
 		}
 		if (tokenTreasuryBalance.isLessThan(totalTransfers)) {

@@ -12,7 +12,7 @@ import {
 	setTreasuryInformation,
 } from './distribution';
 import { validatePrivateKey } from './keys';
-import { getAccountInfo, getScheduleInfo, getTransactionInfo } from './mirror';
+import { getAccountInfo, getAccountTokenBalance, getScheduleInfo, getTransactionInfo } from './mirror';
 import { getAppVersion, openAccountExplorer, openScheduleExplorer, openTransactionExplorer, queryUserForCsvFile, queryUserForOutputFile } from './ui';
 /**
  * The registry of supported/whitelisted methods executing in the
@@ -34,6 +34,7 @@ const methods: { [key: string]: (...args: any[]) => Promise<any> } = {
 	'get-app-version': getAppVersion,
 	'get-transaction-info': getTransactionInfo,
 	'get-account-info': getAccountInfo,
+	'get-account-token-balance': getAccountTokenBalance,
 	'get-schedule-info': getScheduleInfo,
 	'open-account-explorer': openAccountExplorer,
 	'open-schedule-explorer': openScheduleExplorer,
